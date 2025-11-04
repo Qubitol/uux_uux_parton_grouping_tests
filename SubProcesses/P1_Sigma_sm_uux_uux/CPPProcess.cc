@@ -98,10 +98,12 @@ namespace mg5amcGpu
 namespace mg5amcCpu
 #endif
 {
+  constexpr int np4 = CPPProcess::np4;       // dimensions of 4-momenta (E,px,py,pz)
   constexpr int nw6 = CPPProcess::nw6;       // dimensions of each wavefunction (HELAS KEK 91-11): e.g. 6 for e+ e- -> mu+ mu- (fermions and vectors)
   constexpr int npar = CPPProcess::npar;     // #particles in total (external = initial + final): e.g. 4 for e+ e- -> mu+ mu-
   constexpr int ncomb = CPPProcess::ncomb;   // #helicity combinations: e.g. 16 for e+ e- -> mu+ mu- (2**4 = fermion spin up/down ** npar)
   constexpr int ncolor = CPPProcess::ncolor; // the number of leading colors
+  constexpr int nmaxflavor = CPPProcess::nmaxflavor; // the maximum number of flavor combinations
 
   // [NB: I am currently unable to get the right value of nwf in CPPProcess.h - will hardcode it in CPPProcess.cc instead (#644)]
   //using CPPProcess::nwf; // #wavefunctions = #external (npar) + #internal: e.g. 5 for e+ e- -> mu+ mu- (1 internal is gamma or Z)
@@ -301,12 +303,15 @@ namespace mg5amcCpu
     // ** NB: in other words, amplitudes and wavefunctions still have TRIVIAL ACCESS: there is currently no need
     // ** NB: to have large memory structurs for wavefunctions/amplitudes in all events (no kernel splitting yet)!
     //MemoryBufferWavefunctions w_buffer[nwf]{ neppV };
-    cxtype_sv w_sv[nwf][nw6]; // particle wavefunctions within Feynman diagrams (nw6 is often 6, the dimension of spin 1/2 or spin 1 particles)
+    // Create memory only for the wavefunctions since we can access directly the one for the momenta later
+    cxtype_sv w_sv[nwf][nw6-2]; // particle wavefunctions within Feynman diagrams (nw6 is often 6, the dimension of spin 1/2 or spin 1 particles)
     cxtype_sv amp_sv[1];      // invariant amplitude for one given Feynman diagram
 
     // Proof of concept for using fptype* in the interface
     fptype* w_fp[nwf];
-    for( int iwf = 0; iwf < nwf; iwf++ ) w_fp[iwf] = reinterpret_cast<fptype*>( w_sv[iwf] );
+    // Wrap the memory into ALOHAOBJ
+    ALOHAOBJ<np4> aloha_obj[nwf];
+    for( int iwf = 0; iwf < nwf; iwf++ ) aloha_obj[iwf] = ALOHAOBJ<np4>{w_sv[iwf]};
     fptype* amp_fp;
     amp_fp = reinterpret_cast<fptype*>( amp_sv );
 
@@ -378,18 +383,18 @@ namespace mg5amcCpu
       // *** DIAGRAM 1 OF 2 ***
 
       // Wavefunction(s) for diagram number 1
-      ixxxxx<M_ACCESS, W_ACCESS>( momenta, 0., cHel[ihel][0], +1, w_fp[0], 0 );
+      ixxxxx<M_ACCESS, W_ACCESS>( momenta, 0., cHel[ihel][0], +1, cFlavors[iflavor][0], aloha_obj[0], 0 );
 
-      oxxxxx<M_ACCESS, W_ACCESS>( momenta, 0., cHel[ihel][1], -1, w_fp[1], 1 );
+      oxxxxx<M_ACCESS, W_ACCESS>( momenta, 0., cHel[ihel][1], -1, cFlavors[iflavor][1], aloha_obj[1], 1 );
 
-      oxxxxx<M_ACCESS, W_ACCESS>( momenta, 0., cHel[ihel][2], +1, w_fp[2], 2 );
+      oxxxxx<M_ACCESS, W_ACCESS>( momenta, 0., cHel[ihel][2], +1, cFlavors[iflavor][2], aloha_obj[2], 2 );
 
-      ixxxxx<M_ACCESS, W_ACCESS>( momenta, 0., cHel[ihel][3], -1, w_fp[3], 3 );
+      ixxxxx<M_ACCESS, W_ACCESS>( momenta, 0., cHel[ihel][3], -1, cFlavors[iflavor][3], aloha_obj[3], 3 );
 
-      FFV1P0_3<W_ACCESS, CD_ACCESS>( w_fp[0], w_fp[1], COUPs[0], 1.0, 0., 0., w_fp[4] );
+      FFV1P0_3<W_ACCESS, CD_ACCESS>( aloha_obj[0], aloha_obj[1], COUPs[0], 1.0, 0., 0., aloha_obj[4] );
 
       // Amplitude(s) for diagram number 1
-      FFV1_0<W_ACCESS, A_ACCESS, CD_ACCESS>( w_fp[3], w_fp[2], w_fp[4], COUPs[0], 1.0, &amp_fp[0] );
+      FFV1_0<W_ACCESS, A_ACCESS, CD_ACCESS>( aloha_obj[3], aloha_obj[2], aloha_obj[4], COUPs[0], 1.0, &amp_fp[0] );
 #ifdef MGONGPU_SUPPORTS_MULTICHANNEL
       // Here the code base generated with multichannel support updates numerators_sv and denominators_sv (#473)
 #endif
@@ -399,10 +404,10 @@ namespace mg5amcCpu
       // *** DIAGRAM 2 OF 2 ***
 
       // Wavefunction(s) for diagram number 2
-      FFV1P0_3<W_ACCESS, CD_ACCESS>( w_fp[0], w_fp[2], COUPs[0], 1.0, 0., 0., w_fp[4] );
+      FFV1P0_3<W_ACCESS, CD_ACCESS>( aloha_obj[0], aloha_obj[2], COUPs[0], 1.0, 0., 0., aloha_obj[4] );
 
       // Amplitude(s) for diagram number 2
-      FFV1_0<W_ACCESS, A_ACCESS, CD_ACCESS>( w_fp[3], w_fp[1], w_fp[4], COUPs[0], 1.0, &amp_fp[0] );
+      FFV1_0<W_ACCESS, A_ACCESS, CD_ACCESS>( aloha_obj[3], aloha_obj[1], aloha_obj[4], COUPs[0], 1.0, &amp_fp[0] );
 #ifdef MGONGPU_SUPPORTS_MULTICHANNEL
       // Here the code base generated with multichannel support updates numerators_sv and denominators_sv (#473)
 #endif

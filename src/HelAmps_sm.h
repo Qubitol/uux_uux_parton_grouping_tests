@@ -44,6 +44,21 @@ namespace mg5amcCpu
 #define ALWAYS_INLINE
 #endif
 
+  template<int NP4>
+  struct ALOHAOBJ {
+
+      static constexpr int np4 = NP4;
+      const fptype_sv * pvec[np4];
+      cxtype_sv * w;
+      int flv_index;
+
+      // main constructor
+      ALOHAOBJ() = default;
+      ALOHAOBJ(cxtype_sv * w_sv_i, int flv = 1)
+          : w(w_sv_i), flv_index(flv) {}
+
+  };
+
   //--------------------------------------------------------------------------
 
   // ALOHA-style object for easy flavor consolidation and non-template API
@@ -57,14 +72,14 @@ namespace mg5amcCpu
 
 
   // Compute the output wavefunction fi[6] from the input momenta[npar*4*nevt]
-  template<class M_ACCESS, class W_ACCESS>
+  template<class M_ACCESS, class W_ACCESS, int NP4>
   __host__ __device__ INLINE void
   ixxxxx( const fptype momenta[], // input: momenta
           const fptype fmass,     // input: fermion mass
           const int nhel,         // input: -1 or +1 (helicity of fermion)
           const int nsf,          // input: +1 (particle) or -1 (antiparticle)
-          int flv,                // input: flavor index
-          ALOHAOBJ & fi,          // output: wavefunctions
+          const int flv,          // input: flavour
+          ALOHAOBJ<NP4> & fi,     // output: aloha objects
           const int ipar          // input: particle# out of npar
           ) ALWAYS_INLINE;
 
@@ -200,15 +215,15 @@ namespace mg5amcCpu
 
   //==========================================================================
 
-  // Compute the output wavefunction fo[6] from the input momenta[npar*4*nevt]
-  template<class M_ACCESS, class W_ACCESS>
+  // Compute the output wavefunction fi[6] from the input momenta[npar*4*nevt]
+  template<class M_ACCESS, class W_ACCESS, int NP4>
   __host__ __device__ void
   ixxxxx( const fptype momenta[], // input: momenta
           const fptype fmass,     // input: fermion mass
           const int nhel,         // input: -1 or +1 (helicity of fermion)
           const int nsf,          // input: +1 (particle) or -1 (antiparticle)
-          int flv,                // input: flavor index
-          ALOHAOBJ & fi,         // output: wavefunctions
+          const int flv,
+          ALOHAOBJ<NP4> & fi,     // output: wavefunctions
           const int ipar )        // input: particle# out of npar
   {
     mgDebug( 0, __FUNCTION__ );
@@ -217,18 +232,16 @@ namespace mg5amcCpu
     // Variables xxxDENOM are declared as 'volatile' to make sure they are not optimized away on clang! (#724)
     // A few additional variables are declared as 'volatile' to avoid sqrt-of-negative-number FPEs (#736)
     fi.flv_index = flv;
-    for (int i = 0; i < 4; i++)
-    {
-      fi.p[i] = M_ACCESS::kernelAccessIp4IparConst( momenta, i, ipar ) * nsf;
-    }
+    for (int i = 0; i < fi.np4; ++i)
+        fi.pvec[i] = M_ACCESS::kernelAccessIp4IparConst( momenta, i, ipar ) * (fptype)nsf;
     const int nh = nhel * nsf;
     if( fmass != 0. )
     {
 #ifndef MGONGPU_CPPSIMD
-      const fptype_sv pp = fpmin( fi.p[0], fpsqrt( fi.p[1] * fi.p[1] + fi.p[2] * fi.p[2] + fi.p[3] * fi.p[3] ) );
+      const fptype_sv pp = fpmin( fi.pvec[0], fpsqrt( fi.pvec[1] * fi.pvec[1] + fi.pvec[2] * fi.pvec[2] + fi.pvec[3] * fi.pvec[3] ) );
 #else
-      volatile fptype_sv p2 = fi.p[1] * fi.p[1] + fi.p[2] * fi.p[2] + fi.p[3] * fi.p[3]; // volatile fixes #736
-      const fptype_sv pp = fpmin( fi.p[0], fpsqrt( p2 ) );
+      volatile fptype_sv p2 = fi.pvec[1] * fi.pvec[1] + fi.pvec[2] * fi.pvec[2] + fi.pvec[3] * fi.pvec[3]; // volatile fixes #736
+      const fptype_sv pp = fpmin( fi.pvec[0], fpsqrt( p2 ) );
 #endif
       // In C++ ixxxxx, use a single ip/im numbering that is valid both for pp==0 and pp>0, which have two numbering schemes in Fortran ixxxxx:
       // for pp==0, Fortran sqm(0:1) has indexes 0,1 as in C++; but for Fortran pp>0, omega(2) has indexes 1,2 and not 0,1
@@ -242,25 +255,25 @@ namespace mg5amcCpu
         fptype sqm[2] = { fpsqrt( std::abs( fmass ) ), 0. }; // possibility of negative fermion masses
         //sqm[1] = ( fmass < 0. ? -abs( sqm[0] ) : abs( sqm[0] ) ); // AV: why abs here?
         sqm[1] = ( fmass < 0. ? -sqm[0] : sqm[0] ); // AV: removed an abs here
-        fi.W[0] = cxmake( ip * sqm[ip], 0 );
-        fi.W[1] = cxmake( im * nsf * sqm[ip], 0 );
-        fi.W[2] = cxmake( ip * nsf * sqm[im], 0 );
-        fi.W[3] = cxmake( im * sqm[im], 0 );
+        fi.w[0] = cxmake( ip * sqm[ip], 0 );
+        fi.w[1] = cxmake( im * nsf * sqm[ip], 0 );
+        fi.w[2] = cxmake( ip * nsf * sqm[im], 0 );
+        fi.w[3] = cxmake( im * sqm[im], 0 );
       }
       else
       {
         const fptype sf[2] = { fptype( 1 + nsf + ( 1 - nsf ) * nh ) * (fptype)0.5,
                                fptype( 1 + nsf - ( 1 - nsf ) * nh ) * (fptype)0.5 };
-        fptype omega[2] = { fpsqrt( pvec0 + pp ), 0. };
+        fptype omega[2] = { fpsqrt( fi.pvec[0] + pp ), 0. };
         omega[1] = fmass / omega[0];
         const fptype sfomega[2] = { sf[0] * omega[ip], sf[1] * omega[im] };
-        const fptype pp3 = fpmax( pp + pvec3, 0. );
+        const fptype pp3 = fpmax( pp + fi.pvec[3], 0. );
         const cxtype chi[2] = { cxmake( fpsqrt( pp3 * (fptype)0.5 / pp ), 0. ),
-                                ( pp3 == 0. ? cxmake( -nh, 0. ) : cxmake( nh * pvec1, pvec2 ) / fpsqrt( 2. * pp * pp3 ) ) };
-        fi.W[0] = sfomega[0] * chi[im];
-        fi.W[1] = sfomega[0] * chi[ip];
-        fi.W[2] = sfomega[1] * chi[im];
-        fi.W[3] = sfomega[1] * chi[ip];
+                                ( pp3 == 0. ? cxmake( -nh, 0. ) : cxmake( nh * fi.pvec[1], fi.pvec[2] ) / fpsqrt( 2. * pp * pp3 ) ) };
+        fi.w[0] = sfomega[0] * chi[im];
+        fi.w[1] = sfomega[0] * chi[ip];
+        fi.w[2] = sfomega[1] * chi[im];
+        fi.w[3] = sfomega[1] * chi[ip];
       }
 #else
       // Branch A: pp == 0.
@@ -274,61 +287,61 @@ namespace mg5amcCpu
       // Branch B: pp != 0.
       const fptype sf[2] = { fptype( 1 + nsf + ( 1 - nsf ) * nh ) * (fptype)0.5,
                              fptype( 1 + nsf - ( 1 - nsf ) * nh ) * (fptype)0.5 };
-      fptype_v omega[2] = { fpsqrt( fi.p[0] + pp ), 0 };
+      fptype_v omega[2] = { fpsqrt( fi.pvec[0] + pp ), 0 };
       omega[1] = fmass / omega[0];
       const fptype_v sfomega[2] = { sf[0] * omega[ip], sf[1] * omega[im] };
-      const fptype_v pp3 = fpmax( pp + fi.p[3], 0 );
+      const fptype_v pp3 = fpmax( pp + fi.pvec[3], 0 );
       volatile fptype_v ppDENOM = fpternary( pp != 0, pp, 1. );    // hack: ppDENOM[ieppV]=1 if pp[ieppV]==0
       volatile fptype_v pp3DENOM = fpternary( pp3 != 0, pp3, 1. ); // hack: pp3DENOM[ieppV]=1 if pp3[ieppV]==0
       volatile fptype_v chi0r2 = pp3 * 0.5 / ppDENOM;              // volatile fixes #736
       const cxtype_v chi[2] = { cxmake( fpsqrt( chi0r2 ), 0 ),     // hack: dummy[ieppV] is not used if pp[ieppV]==0
                                 cxternary( ( pp3 == 0. ),
                                            cxmake( -nh, 0 ),
-                                           cxmake( (fptype)nh * fi.p[1], fi.p[2] ) / fpsqrt( 2. * ppDENOM * pp3DENOM ) ) }; // hack: dummy[ieppV] is not used if pp[ieppV]==0
+                                           cxmake( (fptype)nh * fi.pvec[1], fi.pvec[2] ) / fpsqrt( 2. * ppDENOM * pp3DENOM ) ) }; // hack: dummy[ieppV] is not used if pp[ieppV]==0
       const cxtype_v fiB_2 = sfomega[0] * chi[im];
       const cxtype_v fiB_3 = sfomega[0] * chi[ip];
       const cxtype_v fiB_4 = sfomega[1] * chi[im];
       const cxtype_v fiB_5 = sfomega[1] * chi[ip];
       // Choose between the results from branch A and branch B
       const bool_v mask = ( pp == 0. );
-      fi.W[0] = cxternary( mask, fiA_2, fiB_2 );
-      fi.W[1] = cxternary( mask, fiA_3, fiB_3 );
-      fi.W[2] = cxternary( mask, fiA_4, fiB_4 );
-      fi.W[3] = cxternary( mask, fiA_5, fiB_5 );
+      fi.w[0] = cxternary( mask, fiA_2, fiB_2 );
+      fi.w[1] = cxternary( mask, fiA_3, fiB_3 );
+      fi.w[2] = cxternary( mask, fiA_4, fiB_4 );
+      fi.w[3] = cxternary( mask, fiA_5, fiB_5 );
 #endif
     }
     else
     {
 #ifdef MGONGPU_CPPSIMD
-      volatile fptype_sv p0p3 = fpmax( fi.p[0] + fi.p[3], 0 ); // volatile fixes #736
-      volatile fptype_sv sqp0p3 = fpternary( ( fi.p[1] == 0. and fi.p[2] == 0. and fi.p[3] < 0. ),
+      volatile fptype_sv p0p3 = fpmax( fi.pvec[0] + fi.pvec[3], 0 ); // volatile fixes #736
+      volatile fptype_sv sqp0p3 = fpternary( ( fi.pvec[1] == 0. and fi.pvec[2] == 0. and fi.pvec[3] < 0. ),
                                              fptype_sv{ 0 },
                                              fpsqrt( p0p3 ) * (fptype)nsf );
       volatile fptype_sv sqp0p3DENOM = fpternary( sqp0p3 != 0, (fptype_sv)sqp0p3, 1. ); // hack: dummy sqp0p3DENOM[ieppV]=1 if sqp0p3[ieppV]==0
       cxtype_sv chi[2] = { cxmake( (fptype_v)sqp0p3, 0. ),
                            cxternary( sqp0p3 == 0,
-                                      cxmake( -(fptype)nhel * fpsqrt( 2. * fi.p[0] ), 0. ),
-                                      cxmake( (fptype)nh * fi.p[1], fi.p[2] ) / (const fptype_v)sqp0p3DENOM ) }; // hack: dummy[ieppV] is not used if sqp0p3[ieppV]==0
+                                      cxmake( -(fptype)nhel * fpsqrt( 2. * fi.pvec[0] ), 0. ),
+                                      cxmake( (fptype)nh * fi.pvec[1], fi.pvec[2] ) / (const fptype_v)sqp0p3DENOM ) }; // hack: dummy[ieppV] is not used if sqp0p3[ieppV]==0
 #else
-      const fptype_sv sqp0p3 = fpternary( ( fi.p[1] == 0. and fi.p[2] == 0. and fi.p[3] < 0. ),
+      const fptype_sv sqp0p3 = fpternary( ( fi.pvec[1] == 0. and fi.pvec[2] == 0. and fi.pvec[3] < 0. ),
                                           fptype_sv{ 0 },
-                                          fpsqrt( fpmax( fi.p[0] + fi.p[3], 0. ) ) * (fptype)nsf );
+                                          fpsqrt( fpmax( fi.pvec[0] + fi.pvec[3], 0. ) ) * (fptype)nsf );
       const cxtype_sv chi[2] = { cxmake( sqp0p3, 0. ),
-                                 ( sqp0p3 == 0. ? cxmake( -(fptype)nhel * fpsqrt( 2. * fi.p[0] ), 0. ) : cxmake( (fptype)nh * fi.p[1], fi.p[2] ) / sqp0p3 ) };
+                                 ( sqp0p3 == 0. ? cxmake( -(fptype)nhel * fpsqrt( 2. * fi.pvec[0] ), 0. ) : cxmake( (fptype)nh * fi.pvec[1], fi.pvec[2] ) / sqp0p3 ) };
 #endif
       if( nh == 1 )
       {
-        fi.W[0] = cxzero_sv();
-        fi.W[1] = cxzero_sv();
-        fi.W[2] = chi[0];
-        fi.W[3] = chi[1];
+        fi.w[0] = cxzero_sv();
+        fi.w[1] = cxzero_sv();
+        fi.w[2] = chi[0];
+        fi.w[3] = chi[1];
       }
       else
       {
-        fi.W[2] = chi[1];
-        fi.W[3] = chi[0];
-        fi.W[4] = cxzero_sv();
-        fi.W[5] = cxzero_sv();
+        fi.w[0] = chi[1];
+        fi.w[1] = chi[0];
+        fi.w[2] = cxzero_sv();
+        fi.w[3] = cxzero_sv();
       }
     }
     mgDebug( 1, __FUNCTION__ );

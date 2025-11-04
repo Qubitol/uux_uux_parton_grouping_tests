@@ -77,6 +77,7 @@ namespace mg5amcCpu
     static constexpr int ncomb = 16; // #helicity combinations: e.g. 16 for e+ e- -> mu+ mu- (2**4 = fermion spin up/down ** npar)
     static constexpr int ndiagrams = 2; // #Feynman diagrams: e.g. 3 for e+ e- -> mu+ mu-
     static constexpr int ncolor = 2; // the number of leading colors: e.g. 1 for e+ e- -> mu+ mu-
+    static constexpr int nmaxflavor = 3; // the maximum number of flavor combinations
 
     // Hardcoded parameters for this process (constant class variables)
     // [NB: this class assumes nprocesses==1 i.e. a single DSIG1 and no DSIG2 in Fortran (#272 and #343)]
