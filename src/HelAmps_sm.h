@@ -44,42 +44,32 @@ namespace mg5amcCpu
 #define ALWAYS_INLINE
 #endif
 
-  template<int NP4>
+  // ALOHA-style object for easy flavor consolidation and non-template API
   struct ALOHAOBJ {
 
-      static constexpr int np4 = NP4;
+      static constexpr int np4 = 4;
       const fptype_sv * pvec[np4];
       cxtype_sv * w;
       int flv_index;
 
       // main constructor
       ALOHAOBJ() = default;
-      ALOHAOBJ(cxtype_sv * w_sv_i, int flv = 1)
+      ALOHAOBJ(cxtype_sv * w_sv_i, int flv = -1)
           : w(w_sv_i), flv_index(flv) {}
 
   };
 
   //--------------------------------------------------------------------------
 
-  // ALOHA-style object for easy flavor consolidation and non-template API
-  struct ALOHAOBJ
-  {
-    fptype p[4];
-    cxtype W[6];
-    int flv_index = -1; // -1 means unknown/mixed
-    inline ALOHAOBJ() {}
-  };
-
-
   // Compute the output wavefunction fi[6] from the input momenta[npar*4*nevt]
-  template<class M_ACCESS, class W_ACCESS, int NP4>
+  template<class M_ACCESS, class W_ACCESS>
   __host__ __device__ INLINE void
   ixxxxx( const fptype momenta[], // input: momenta
           const fptype fmass,     // input: fermion mass
           const int nhel,         // input: -1 or +1 (helicity of fermion)
           const int nsf,          // input: +1 (particle) or -1 (antiparticle)
           const int flv,          // input: flavour
-          ALOHAOBJ<NP4> & fi,     // output: aloha objects
+          ALOHAOBJ & fi,     // output: aloha objects
           const int ipar          // input: particle# out of npar
           ) ALWAYS_INLINE;
 
@@ -216,14 +206,14 @@ namespace mg5amcCpu
   //==========================================================================
 
   // Compute the output wavefunction fi[6] from the input momenta[npar*4*nevt]
-  template<class M_ACCESS, class W_ACCESS, int NP4>
+  template<class M_ACCESS, class W_ACCESS>
   __host__ __device__ void
   ixxxxx( const fptype momenta[], // input: momenta
           const fptype fmass,     // input: fermion mass
           const int nhel,         // input: -1 or +1 (helicity of fermion)
           const int nsf,          // input: +1 (particle) or -1 (antiparticle)
           const int flv,
-          ALOHAOBJ<NP4> & fi,     // output: wavefunctions
+          ALOHAOBJ & fi,     // output: wavefunctions
           const int ipar )        // input: particle# out of npar
   {
     mgDebug( 0, __FUNCTION__ );
