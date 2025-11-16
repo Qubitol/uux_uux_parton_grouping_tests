@@ -310,8 +310,8 @@ namespace mg5amcCpu
     // Proof of concept for using fptype* in the interface
     fptype* w_fp[nwf];
     // Wrap the memory into ALOHAOBJ
-    ALOHAOBJ<np4> aloha_obj[nwf];
-    for( int iwf = 0; iwf < nwf; iwf++ ) aloha_obj[iwf] = ALOHAOBJ<np4>{w_sv[iwf]};
+    ALOHAOBJ aloha_obj[nwf];
+    for( int iwf = 0; iwf < nwf; iwf++ ) aloha_obj[iwf] = ALOHAOBJ{w_sv[iwf]};
     fptype* amp_fp;
     amp_fp = reinterpret_cast<fptype*>( amp_sv );
 
