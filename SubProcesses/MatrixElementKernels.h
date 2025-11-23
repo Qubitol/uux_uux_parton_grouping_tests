@@ -36,7 +36,8 @@ namespace mg5amcCpu
                              const BufferChannelIds& channelIds,   // input: channel ids for single-diagram enhancement
                              BufferMatrixElements& matrixElements, // output: matrix elements
                              BufferSelectedHelicity& selhel,       // output: helicity selection
-                             BufferSelectedColor& selcol );        // output: color selection
+                             BufferSelectedColor& selcol,          // output: color selection
+                             const int iflavor );
 
   public:
 
@@ -93,6 +94,9 @@ namespace mg5amcCpu
     // The buffer for the output color selection
     BufferSelectedColor& m_selcol;
 
+    // The index of the flavor combination to compute
+    const int m_iflavor;
+
 #ifdef MGONGPU_CHANNELID_DEBUG
     // The events-per-channel counter for debugging
     std::map<size_t, size_t> m_nevtProcessedByChannel;
@@ -119,7 +123,8 @@ namespace mg5amcCpu
                              BufferMatrixElements& matrixElements, // output: matrix elements
                              BufferSelectedHelicity& selhel,       // output: helicity selection
                              BufferSelectedColor& selcol,          // output: color selection
-                             const size_t nevt );
+                             const size_t nevt,
+                             const int iflavor );
 
     // Destructor
     virtual ~MatrixElementKernelHost();
@@ -172,7 +177,8 @@ namespace mg5amcCpu
                                BufferSelectedHelicity& selhel,       // output: helicity selection
                                BufferSelectedColor& selcol,          // output: color selection
                                const size_t gpublocks,
-                               const size_t gputhreads );
+                               const size_t gputhreads,
+                               const int iflavor );
 
     // Destructor
     virtual ~MatrixElementKernelDevice();

@@ -85,7 +85,7 @@ namespace mg5amcCpu
    * @param np4F number of momenta components, usually 4, in Fortran arrays
    * (KEPT FOR SANITY CHECKS ONLY)
    */
-    Bridge( unsigned int nevtF, unsigned int nparF, unsigned int np4F );
+    Bridge( unsigned int nevtF, int iflavorF, unsigned int nparF, unsigned int np4F );
 
     /**
    * Destructor
@@ -158,6 +158,7 @@ namespace mg5amcCpu
     unsigned int m_nevt; // number of events
     int m_nGoodHel;      // the number of good helicities (-1 initially when they have
                          // not yet been calculated)
+    int m_iflavor;       // the index to the flavor combination to be calculated
 
 #ifdef MGONGPUCPP_GPUIMPL
     int m_gputhreads; // number of gpu threads (default set from number of
@@ -222,8 +223,8 @@ namespace mg5amcCpu
   //
 
   template<typename FORTRANFPTYPE>
-  Bridge<FORTRANFPTYPE>::Bridge( unsigned int nevtF, unsigned int nparF, unsigned int np4F )
-    : m_nevt( nevtF ), m_nGoodHel( -1 )
+  Bridge<FORTRANFPTYPE>::Bridge( unsigned int nevtF, int iflavorF, unsigned int nparF, unsigned int np4F)
+    : m_nevt( nevtF ), m_nGoodHel( -1 ), m_iflavor ( iflavorF )
 #ifdef MGONGPUCPP_GPUIMPL
     , m_gputhreads( 256 )                  // default number of gpu threads
     , m_gpublocks( m_nevt / m_gputhreads ) // this ensures m_nevt <= m_gpublocks*m_gputhreads
@@ -275,14 +276,14 @@ namespace mg5amcCpu
               << std::endl;
 #endif
     m_pmek.reset( new MatrixElementKernelDevice(
-      m_devMomentaC, m_devGs, m_devRndHel, m_devRndCol, m_devChannelIds, m_devMEs, m_devSelHel, m_devSelCol, m_gpublocks, m_gputhreads ) );
+      m_devMomentaC, m_devGs, m_devRndHel, m_devRndCol, m_devChannelIds, m_devMEs, m_devSelHel, m_devSelCol, m_gpublocks, m_gputhreads, m_iflavor ) );
 #else
 #ifdef MGONGPUCPP_VERBOSE
     std::cout << "WARNING! Instantiate host Bridge (nevt=" << m_nevt << ")"
               << std::endl;
 #endif
     m_pmek.reset( new MatrixElementKernelHost(
-      m_hstMomentaC, m_hstGs, m_hstRndHel, m_hstRndCol, m_hstChannelIds, m_hstMEs, m_hstSelHel, m_hstSelCol, m_nevt ) );
+      m_hstMomentaC, m_hstGs, m_hstRndHel, m_hstRndCol, m_hstChannelIds, m_hstMEs, m_hstSelHel, m_hstSelCol, m_nevt, m_iflavor ) );
 #endif // MGONGPUCPP_GPUIMPL
     // Create a process object, read param card and set parameters
     // FIXME: the process instance can happily go out of scope because it is only

@@ -170,10 +170,12 @@ namespace mg5amcCpu
   // Helicity combinations (and filtering of "good" helicity combinations)
 #ifdef MGONGPUCPP_GPUIMPL
   __device__ __constant__ short cHel[ncomb][npar];
+  __device__ __constant__ short flavors[nmaxflavors][npar];
   __device__ __constant__ int dcNGoodHel;
   __device__ __constant__ int dcGoodHel[ncomb];
 #else
   static short cHel[ncomb][npar];
+  static short cFlavors[nmaxflavor][npar];
 #endif
   static int cNGoodHel;
   static int cGoodHel[ncomb];
@@ -238,6 +240,7 @@ namespace mg5amcCpu
   calculate_jamps( int ihel,
                    const fptype* allmomenta,          // input: momenta[nevt*npar*4]
                    const fptype* allcouplings,        // input: couplings[nevt*ndcoup*2]
+                   const int iflavor,                 // input: index of the flavor combination
 #ifdef MGONGPUCPP_GPUIMPL
                    fptype* allJamps,                  // output: jamp[2*ncolor*nevt] buffer for one helicity _within a super-buffer for dcNGoodHel helicities_
 #ifdef MGONGPU_SUPPORTS_MULTICHANNEL
@@ -486,10 +489,18 @@ namespace mg5amcCpu
       { -1, 1, -1, -1 },
       { -1, 1, 1, 1 },
       { -1, 1, 1, -1 } };
+    static constexpr short tFlavors[nmaxflavor, npar] = {
+      { 1, 1, 1, 1 },
+      { 1, 2, 1, 2 },
+      { 2, 2, 2, 2 }
+    };
+
 #ifdef MGONGPUCPP_GPUIMPL
     gpuMemcpyToSymbol( cHel, tHel, ncomb * npar * sizeof( short ) );
+    gpuMemcpyToSymbol( cFlavors, tFlavors, nmaxflavor * npar * sizeof( short ) );
 #else
     memcpy( cHel, tHel, ncomb * npar * sizeof( short ) );
+    memcpy( cFlavors, tFlavors, nmaxflavor * npar * sizeof( short ) );
 #endif
 
     // Enable SIGFPE traps for Floating Point Exceptions
@@ -699,6 +710,7 @@ namespace mg5amcCpu
   void /* clang-format off */
   sigmaKin_getGoodHel( const fptype* allmomenta,   // input: momenta[nevt*npar*4]
                        const fptype* allcouplings, // input: couplings[nevt*ndcoup*2]
+                       const int iflavor,          // input: index of the flavor combination
                        fptype* allMEs,             // output: allMEs[nevt], |M|^2 final_avg_over_helicities
 #ifdef MGONGPU_SUPPORTS_MULTICHANNEL
                        fptype* allNumerators,      // output: multichannel numerators[nevt], running_sum_over_helicities
@@ -724,9 +736,9 @@ namespace mg5amcCpu
 #ifdef MGONGPU_SUPPORTS_MULTICHANNEL
       constexpr fptype_sv* allJamp2s = nullptr;        // no need for color selection during helicity filtering
       constexpr unsigned int* allChannelIds = nullptr; // disable multichannel single-diagram enhancement
-      gpuLaunchKernel( calculate_jamps, gpublocks, gputhreads, ihel, allmomenta, allcouplings, allJamps, allChannelIds, allNumerators, allDenominators, allJamp2s, gpublocks * gputhreads );
+      gpuLaunchKernel( calculate_jamps, gpublocks, gputhreads, ihel, allmomenta, allcouplings, iflavor, allJamps, allChannelIds, allNumerators, allDenominators, allJamp2s, gpublocks * gputhreads );
 #else
-      gpuLaunchKernel( calculate_jamps, gpublocks, gputhreads, ihel, allmomenta, allcouplings, allJamps, gpublocks * gputhreads );
+      gpuLaunchKernel( calculate_jamps, gpublocks, gputhreads, ihel, allmomenta, allcouplings, iflavor, allJamps, gpublocks * gputhreads );
 #endif
       gpuLaunchKernel( color_sum_kernel, gpublocks, gputhreads, allMEs, allJamps, nOneHel );
       gpuMemcpy( hstMEs, allMEs, maxtry * sizeof( fptype ), gpuMemcpyDeviceToHost );
@@ -746,6 +758,7 @@ namespace mg5amcCpu
   void
   sigmaKin_getGoodHel( const fptype* allmomenta,   // input: momenta[nevt*npar*4]
                        const fptype* allcouplings, // input: couplings[nevt*ndcoup*2]
+                       const int iflavor,          // input: index of the flavor combination
                        fptype* allMEs,             // output: allMEs[nevt], |M|^2 final_avg_over_helicities
 #ifdef MGONGPU_SUPPORTS_MULTICHANNEL
                        fptype* allNumerators,      // output: multichannel numerators[nevt], running_sum_over_helicities
@@ -801,9 +814,9 @@ namespace mg5amcCpu
 #endif
 #ifdef MGONGPU_SUPPORTS_MULTICHANNEL /* clang-format off */
         constexpr unsigned int channelId = 0; // disable multichannel single-diagram enhancement
-        calculate_jamps( ihel, allmomenta, allcouplings, jamp_sv, channelId, allNumerators, allDenominators, jamp2_sv, ievt00 ); //maxtry?
+        calculate_jamps( ihel, allmomenta, allcouplings, iflavor, jamp_sv, channelId, allNumerators, allDenominators, jamp2_sv, ievt00 ); //maxtry?
 #else
-        calculate_jamps( ihel, allmomenta, allcouplings, jamp_sv, ievt00 ); //maxtry?
+        calculate_jamps( ihel, allmomenta, allcouplings, iflavor, jamp_sv, ievt00 ); //maxtry?
 #endif /* clang-format on */
         color_sum_cpu( allMEs, jamp_sv, ievt00 );
         for( int ieppV = 0; ieppV < neppV; ++ieppV )
@@ -1000,6 +1013,7 @@ namespace mg5amcCpu
   sigmaKin( const fptype* allmomenta,           // input: momenta[nevt*npar*4]
             const fptype* allcouplings,         // input: couplings[nevt*ndcoup*2]
             const fptype* allrndhel,            // input: random numbers[nevt] for helicity selection
+            const int iflavor,                  // input: index of the flavor combination
 #ifdef MGONGPU_SUPPORTS_MULTICHANNEL
             const fptype* allrndcol,            // input: random numbers[nevt] for color selection
             const unsigned int* allChannelIds,  // input: multichannel channelIds[nevt] (1 to #diagrams); nullptr to disable single-diagram enhancement (fix #899/#911)
@@ -1108,9 +1122,9 @@ namespace mg5amcCpu
 #ifdef MGONGPU_SUPPORTS_MULTICHANNEL
       fptype* hAllNumerators = ghelAllNumerators + ighel * nevt;
       fptype* hAllDenominators = ghelAllDenominators + ighel * nevt;
-      gpuLaunchKernelStream( calculate_jamps, gpublocks, gputhreads, ghelStreams[ighel], ihel, allmomenta, allcouplings, hAllJamps, allChannelIds, hAllNumerators, hAllDenominators, colAllJamp2s, nevt );
+      gpuLaunchKernelStream( calculate_jamps, gpublocks, gputhreads, ghelStreams[ighel], ihel, allmomenta, allcouplings, iflavor, hAllJamps, allChannelIds, hAllNumerators, hAllDenominators, colAllJamp2s, nevt );
 #else
-      gpuLaunchKernelStream( calculate_jamps, gpublocks, gputhreads, ghelStreams[ighel], ihel, allmomenta, allcouplings, hAllJamps, nevt );
+      gpuLaunchKernelStream( calculate_jamps, gpublocks, gputhreads, ghelStreams[ighel], ihel, allmomenta, allcouplings, iflavor, hAllJamps, nevt );
 #endif
     }
     // (2) Then compute the ME for that helicity from the color sum of QCD partial amplitudes jamps
@@ -1207,9 +1221,9 @@ namespace mg5amcCpu
         cxtype_sv jamp_sv[nParity * ncolor] = {}; // fixed nasty bug (omitting 'nParity' caused memory corruptions after calling calculate_jamps)
 #ifdef MGONGPU_SUPPORTS_MULTICHANNEL
         // **NB! in "mixed" precision, using SIMD, calculate_jamps computes MEs for TWO neppV pages with a single channelId! #924
-        calculate_jamps( ihel, allmomenta, allcouplings, jamp_sv, channelId, allNumerators, allDenominators, jamp2_sv, ievt00 );
+        calculate_jamps( ihel, allmomenta, allcouplings, iflavor, jamp_sv, channelId, allNumerators, allDenominators, jamp2_sv, ievt00 );
 #else
-        calculate_jamps( ihel, allmomenta, allcouplings, jamp_sv, ievt00 );
+        calculate_jamps( ihel, allmomenta, allcouplings, iflavor, jamp_sv, ievt00 );
 #endif
         color_sum_cpu( allMEs, jamp_sv, ievt00 );
         MEs_ighel[ighel] = E_ACCESS::kernelAccess( E_ACCESS::ieventAccessRecord( allMEs, ievt00 ) );
