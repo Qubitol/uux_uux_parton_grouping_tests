@@ -507,6 +507,7 @@ main( int argc, char** argv )
 
   // --- 0c. Create matrix element kernel [keep this in 0c for the moment]
   std::unique_ptr<MatrixElementKernelBase> pmek;
+  int iflavor = 1;
   if( !bridge )
   {
 #ifdef MGONGPUCPP_GPUIMPL
