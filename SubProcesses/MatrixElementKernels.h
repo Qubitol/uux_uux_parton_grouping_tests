@@ -123,8 +123,8 @@ namespace mg5amcCpu
                              BufferMatrixElements& matrixElements, // output: matrix elements
                              BufferSelectedHelicity& selhel,       // output: helicity selection
                              BufferSelectedColor& selcol,          // output: color selection
-                             const size_t nevt,
-                             const int iflavor );
+                             const int iflavor,
+                             const size_t nevt);
 
     // Destructor
     virtual ~MatrixElementKernelHost();
@@ -176,9 +176,9 @@ namespace mg5amcCpu
                                BufferMatrixElements& matrixElements, // output: matrix elements
                                BufferSelectedHelicity& selhel,       // output: helicity selection
                                BufferSelectedColor& selcol,          // output: color selection
+                               const int iflavor,
                                const size_t gpublocks,
-                               const size_t gputhreads,
-                               const int iflavor );
+                               const size_t gputhreads);
 
     // Destructor
     virtual ~MatrixElementKernelDevice();

@@ -44,14 +44,14 @@ extern "C"
    * @param nparF the pointer to the number of external particles in the Fortran arrays (KEPT FOR SANITY CHECKS ONLY)
    * @param np4F the pointer to the number of momenta components, usually 4, in the Fortran arrays (KEPT FOR SANITY CHECKS ONLY)
    */
-  void fbridgecreate_( CppObjectInFortran** ppbridge, const int* pnevtF, const int* pnparF, const int* pnp4F )
+  void fbridgecreate_( CppObjectInFortran** ppbridge, const int* piflavorF, const int* pnevtF, const int* pnparF, const int* pnp4F )
   {
 #ifdef MGONGPUCPP_GPUIMPL
     GpuRuntime::setUp();
 #endif
     // (NB: CPPProcess::initProc no longer needs to be executed here because it is called in the Bridge constructor)
     // FIXME: disable OMP in Bridge when called from Fortran
-    *ppbridge = new Bridge<FORTRANFPTYPE>( *pnevtF, *pnparF, *pnp4F );
+    *ppbridge = new Bridge<FORTRANFPTYPE>( *piflavorF, *pnevtF, *pnparF, *pnp4F );
   }
 
   /**

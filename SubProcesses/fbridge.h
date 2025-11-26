@@ -19,7 +19,7 @@ extern "C"
 
   using FORTRANFPTYPE = double;
 
-  void fbridgecreate_( CppObjectInFortran** ppbridge, const int* pnevtF, const int* pnparF, const int* pnp4F );
+  void fbridgecreate_( CppObjectInFortran** ppbridge, const int* piflavorF, const int* pnevtF, const int* pnparF, const int* pnp4F );
 
   void fbridgedelete_( CppObjectInFortran** ppbridge );
 

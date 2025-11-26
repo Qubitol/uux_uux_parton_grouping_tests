@@ -31,8 +31,8 @@ namespace mg5amcCpu
                                                     const BufferChannelIds& channelIds,   // input: channel ids for single-diagram enhancement
                                                     BufferMatrixElements& matrixElements, // output: matrix elements
                                                     BufferSelectedHelicity& selhel,       // output: helicity selection
-                                                    BufferSelectedColor& selcol,          // output: color selection
-                                                    const int iflavor )
+                                                    BufferSelectedColor& selcol,
+                                                    const int iflavor)          // output: color selection
     : m_momenta( momenta )
     , m_gs( gs )
     , m_rndhel( rndhel )
@@ -159,9 +159,9 @@ namespace mg5amcCpu
                                                     BufferMatrixElements& matrixElements, // output: matrix elements
                                                     BufferSelectedHelicity& selhel,       // output: helicity selection
                                                     BufferSelectedColor& selcol,          // output: color selection
-                                                    const size_t nevt,
-                                                    const int iflavor )
-    : MatrixElementKernelBase( momenta, gs, rndhel, rndcol, channelIds, matrixElements, selhel, selcol, iflavor )
+                                                    const int iflavor,
+                                                    const size_t nevt)
+    : MatrixElementKernelBase( momenta, gs, rndhel, rndcol, channelIds, matrixElements, selhel, selcol, iflavor)
     , NumberOfEvents( nevt )
     , m_couplings( nevt )
 #ifdef MGONGPU_SUPPORTS_MULTICHANNEL
@@ -207,9 +207,9 @@ namespace mg5amcCpu
     // ... 0d1. Compute good helicity mask on the host
     computeDependentCouplings( m_gs.data(), m_couplings.data(), m_gs.size() );
 #ifdef MGONGPU_SUPPORTS_MULTICHANNEL
-    sigmaKin_getGoodHel( m_momenta.data(), m_couplings.data(), m_matrixElements.data(), m_iflavor, m_numerators.data(), m_denominators.data(), hstIsGoodHel.data(), nevt() );
+    sigmaKin_getGoodHel( m_momenta.data(), m_couplings.data(), m_iflavor, m_matrixElements.data(), m_numerators.data(), m_denominators.data(), hstIsGoodHel.data(), nevt() );
 #else
-    sigmaKin_getGoodHel( m_momenta.data(), m_couplings.data(), m_matrixElements.data(), m_iflavor, hstIsGoodHel.data(), nevt() );
+    sigmaKin_getGoodHel( m_momenta.data(), m_couplings.data(), m_iflavor, m_matrixElements.data(), hstIsGoodHel.data(), nevt() );
 #endif
     // ... 0d2. Copy good helicity list to static memory on the host
     // [FIXME! REMOVE THIS STATIC THAT BREAKS MULTITHREADING?]
@@ -312,9 +312,9 @@ namespace mg5amcGpu
                                                         BufferMatrixElements& matrixElements, // output: matrix elements
                                                         BufferSelectedHelicity& selhel,       // output: helicity selection
                                                         BufferSelectedColor& selcol,          // output: color selection
+                                                        const int iflavor,
                                                         const size_t gpublocks,
-                                                        const size_t gputhreads,
-                                                        const int iflavor )
+                                                        const size_t gputhreads);
     : MatrixElementKernelBase( momenta, gs, rndhel, rndcol, channelIds, matrixElements, selhel, selcol, iflavor )
     , NumberOfEvents( gpublocks * gputhreads )
     , m_couplings( this->nevt() )

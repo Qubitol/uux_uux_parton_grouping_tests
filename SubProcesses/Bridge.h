@@ -85,7 +85,7 @@ namespace mg5amcCpu
    * @param np4F number of momenta components, usually 4, in Fortran arrays
    * (KEPT FOR SANITY CHECKS ONLY)
    */
-    Bridge( unsigned int nevtF, int iflavorF, unsigned int nparF, unsigned int np4F );
+    Bridge( int iflavorF, unsigned int nevtF, unsigned int nparF, unsigned int np4F );
 
     /**
    * Destructor
@@ -155,10 +155,10 @@ namespace mg5amcCpu
     constexpr int nTotHel() const { return CPPProcess::ncomb; }
 
   private:
+    int m_iflavor;       // the index to the flavor combination to be calculated
     unsigned int m_nevt; // number of events
     int m_nGoodHel;      // the number of good helicities (-1 initially when they have
                          // not yet been calculated)
-    int m_iflavor;       // the index to the flavor combination to be calculated
 
 #ifdef MGONGPUCPP_GPUIMPL
     int m_gputhreads; // number of gpu threads (default set from number of
@@ -223,8 +223,8 @@ namespace mg5amcCpu
   //
 
   template<typename FORTRANFPTYPE>
-  Bridge<FORTRANFPTYPE>::Bridge( unsigned int nevtF, int iflavorF, unsigned int nparF, unsigned int np4F)
-    : m_nevt( nevtF ), m_nGoodHel( -1 ), m_iflavor ( iflavorF )
+  Bridge<FORTRANFPTYPE>::Bridge( int iflavorF, unsigned int nevtF, unsigned int nparF, unsigned int np4F)
+    : m_iflavor( iflavorF ), m_nevt( nevtF ), m_nGoodHel( -1 )
 #ifdef MGONGPUCPP_GPUIMPL
     , m_gputhreads( 256 )                  // default number of gpu threads
     , m_gpublocks( m_nevt / m_gputhreads ) // this ensures m_nevt <= m_gpublocks*m_gputhreads
