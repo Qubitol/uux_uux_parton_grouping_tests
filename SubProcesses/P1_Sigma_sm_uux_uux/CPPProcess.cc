@@ -307,6 +307,7 @@ namespace mg5amcCpu
     // ** NB: to have large memory structurs for wavefunctions/amplitudes in all events (no kernel splitting yet)!
     //MemoryBufferWavefunctions w_buffer[nwf]{ neppV };
     // Create memory only for the wavefunctions since we can access directly the one for the momenta later
+    fptype_sv pvec_sv[nwf][np4];
     cxtype_sv w_sv[nwf][nw6-2]; // particle wavefunctions within Feynman diagrams (nw6 is often 6, the dimension of spin 1/2 or spin 1 particles)
     cxtype_sv amp_sv[1];      // invariant amplitude for one given Feynman diagram
 
@@ -314,7 +315,7 @@ namespace mg5amcCpu
     fptype* w_fp[nwf];
     // Wrap the memory into ALOHAOBJ
     ALOHAOBJ aloha_obj[nwf];
-    for( int iwf = 0; iwf < nwf; iwf++ ) aloha_obj[iwf] = ALOHAOBJ{w_sv[iwf]};
+    for( int iwf = 0; iwf < nwf; iwf++ ) aloha_obj[iwf] = ALOHAOBJ{pvec_sv[iwf], w_sv[iwf]};
     fptype* amp_fp;
     amp_fp = reinterpret_cast<fptype*>( amp_sv );
 
