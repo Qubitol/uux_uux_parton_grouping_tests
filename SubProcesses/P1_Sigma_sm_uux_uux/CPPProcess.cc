@@ -869,6 +869,32 @@ namespace mg5amcCpu
 
   //--------------------------------------------------------------------------
 
+  int
+  broken_sym( const int iflavor )
+  {
+    int old_factor = 1;
+    int pid[] = {81, -81};
+    int nincoming = 2;
+    for (int i = 0; i < (nexternal - nincoming); i++ )
+    {
+      if(pid[i] == 0)
+        continue;
+      int n_tot = 1;
+      for (int j = i + 1; j < (nexternal - nincoming); j++ )
+      {
+        if((pid[i] == pid[j]) && (CPPProcess::tFlavors[iflavor][i] == tFlavors[iflavor][j]))
+        {
+          pid[j] = 0;
+          n_tot = n_tot + 1;
+          old_factor = old_factor/n_tot;
+        }
+      }
+    }
+    return old_factor;
+  }
+
+  //--------------------------------------------------------------------------
+
 #ifdef MGONGPUCPP_GPUIMPL /* clang-format off */
   __global__ void
   normalise_output( fptype* allMEs,                    // output: allMEs[nevt], |M|^2 running_sum_over_helicities
@@ -877,10 +903,11 @@ namespace mg5amcCpu
                     fptype* ghelAllDenominators,       // input/tmp: allNumerators super-buffer for nGoodHel <= ncomb individual helicities (index is ighel)
                     const unsigned int* allChannelIds, // input: multichannel channelIds[nevt] (1 to #diagrams); nullptr to disable SDE enhancement (fix #899/#911)
 #endif
-                    const fptype globaldenom ) /* clang-format on */
+                    const fptype globaldenom,
+                    const fptype broken_sym_factor ) /* clang-format on */
   {
     const int ievt = blockDim.x * blockIdx.x + threadIdx.x; // index of event (thread)
-    allMEs[ievt] /= globaldenom;
+    allMEs[ievt] /= (globaldenom * broken_sym_factor);
 #ifdef MGONGPU_SUPPORTS_MULTICHANNEL
     const int nevt = gridDim.x * blockDim.x;
     if( allChannelIds != nullptr ) // fix segfault #892 (not 'channelIds[0] != 0')
@@ -1058,6 +1085,8 @@ namespace mg5amcCpu
 
     // Denominators: spins, colors and identical particles
     constexpr int helcolDenominators[1] = { 36 }; // assume nprocesses == 1 (#272 and #343)
+    // Broken symmetry factor
+    const int broken_sym_factor = broken_symmetry(iflavor);
 
 #ifndef MGONGPUCPP_GPUIMPL
     //assert( (size_t)(allmomenta) % mgOnGpu::cppAlign == 0 ); // SANITY CHECK: require SIMD-friendly alignment [COMMENT OUT TO TEST MISALIGNED ACCESS]
@@ -1369,11 +1398,12 @@ namespace mg5amcCpu
     // Get the final |M|^2 as an average over helicities/colors of the running sum of |M|^2 over helicities for the given event
     // [NB 'sum over final spins, average over initial spins', eg see
     // https://www.uzh.ch/cmsssl/physik/dam/jcr:2e24b7b1-f4d7-4160-817e-47b13dbf1d7c/Handout_4_2016-UZH.pdf]
+    // Normalise also according to flavor for parton grouping (broken_sym_factor)
 #ifdef MGONGPUCPP_GPUIMPL
 #ifdef MGONGPU_SUPPORTS_MULTICHANNEL
-    gpuLaunchKernel( normalise_output, gpublocks, gputhreads, allMEs, ghelAllNumerators, ghelAllDenominators, allChannelIds, helcolDenominators[0] );
+    gpuLaunchKernel( normalise_output, gpublocks, gputhreads, allMEs, ghelAllNumerators, ghelAllDenominators, allChannelIds, helcolDenominators[0], broken_sym_factor );
 #else
-    gpuLaunchKernel( normalise_output, gpublocks, gputhreads, allMEs, helcolDenominators[0] );
+    gpuLaunchKernel( normalise_output, gpublocks, gputhreads, allMEs, helcolDenominators[0], broken_sym_factor );
 #endif
 #else
     for( int ipagV = 0; ipagV < npagV; ++ipagV )
@@ -1381,7 +1411,7 @@ namespace mg5amcCpu
       const int ievt0 = ipagV * neppV;
       fptype* MEs = E_ACCESS::ieventAccessRecord( allMEs, ievt0 );
       fptype_sv& MEs_sv = E_ACCESS::kernelAccess( MEs );
-      MEs_sv /= helcolDenominators[0];
+      MEs_sv /= (helcolDenominators[0] * broken_sym_factor);
 #ifdef MGONGPU_SUPPORTS_MULTICHANNEL
       if( allChannelIds != nullptr ) // fix segfault #892 (not 'channelIds[0] != 0')
       {
