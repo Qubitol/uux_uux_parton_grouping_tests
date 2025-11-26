@@ -489,7 +489,7 @@ namespace mg5amcCpu
       { -1, 1, -1, -1 },
       { -1, 1, 1, 1 },
       { -1, 1, 1, -1 } };
-    static constexpr short tFlavors[nmaxflavor, npar] = {
+    static constexpr short tFlavors[nmaxflavor][npar] = {
       { 1, 1, 1, 1 },
       { 1, 2, 1, 2 },
       { 2, 2, 2, 2 }
@@ -870,11 +870,12 @@ namespace mg5amcCpu
   //--------------------------------------------------------------------------
 
   int
-  broken_sym( const int iflavor )
+  broken_symmetry( const int iflavor )
   {
     int old_factor = 1;
     int pid[] = {81, -81};
     int nincoming = 2;
+    int nexternal = CPPProcess::npar;
     for (int i = 0; i < (nexternal - nincoming); i++ )
     {
       if(pid[i] == 0)
@@ -882,7 +883,7 @@ namespace mg5amcCpu
       int n_tot = 1;
       for (int j = i + 1; j < (nexternal - nincoming); j++ )
       {
-        if((pid[i] == pid[j]) && (CPPProcess::tFlavors[iflavor][i] == tFlavors[iflavor][j]))
+        if((pid[i] == pid[j]) && (cFlavors[iflavor][i] == cFlavors[iflavor][j]))
         {
           pid[j] = 0;
           n_tot = n_tot + 1;

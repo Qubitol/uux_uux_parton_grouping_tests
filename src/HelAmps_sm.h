@@ -891,9 +891,9 @@ namespace mg5amcCpu
   // Compute the output amplitude 'vertex' from the input wavefunctions F1[6], F2[6], V3[6]
   template<class W_ACCESS, class A_ACCESS, class C_ACCESS>
   __device__ INLINE void
-  FFV1_0( ALOHAOBJ F1,
-          ALOHAOBJ F2,
-          ALOHAOBJ V3,
+  FFV1_0( const ALOHAOBJ & F1,
+          const ALOHAOBJ & F2,
+          const ALOHAOBJ & V3,
           const fptype allCOUP[],
           const double Ccoeff,
           fptype allvertexes[] ) ALWAYS_INLINE;
@@ -903,8 +903,8 @@ namespace mg5amcCpu
   // Compute the output wavefunction 'V3[6]' from the input wavefunctions F1[6], F2[6]
   template<class W_ACCESS, class C_ACCESS>
   __device__ INLINE void
-  FFV1P0_3( ALOHAOBJ F1,
-            ALOHAOBJ F2,
+  FFV1P0_3( const ALOHAOBJ & F1,
+            const ALOHAOBJ & F2,
             const fptype allCOUP[],
             const double Ccoeff,
             const fptype M3,
