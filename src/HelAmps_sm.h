@@ -48,15 +48,14 @@ namespace mg5amcCpu
   struct ALOHAOBJ {
 
       static constexpr int np4 = 4;
-      fptype * pvec;
+      fptype_sv * pvec;
       fptype * w;
       int flv_index;
 
       // main constructor
       ALOHAOBJ() = default;
       ALOHAOBJ(fptype_sv * pvec_sv, cxtype_sv * w_sv, int flv = -1)
-          : flv_index(flv) {
-        pvec = reinterpret_cast<fptype*>(pvec_sv);
+          : pvec(pvec_sv), flv_index(flv) {
         w = reinterpret_cast<fptype*>(w_sv);
     }
 
@@ -965,7 +964,7 @@ namespace mg5amcCpu
     int flv_index2 = F2.flv_index;
     if(flv_index1 != flv_index2 || flv_index1 == -1)
     {
-      ( *vertex ) = cxmake(0, 0);
+      ( *vertex ) = cxzero_sv();
       return;
     }
     const cxtype_sv* wF1 = W_ACCESS::kernelAccessConst( F1.w );
@@ -998,7 +997,7 @@ namespace mg5amcCpu
     int flv_index2 = F2.flv_index;
     if(flv_index1 != flv_index2 || flv_index1 == -1) {
       for(int i = 0; i < V3.np4; i++ ) {
-        wV3[i] = cxmake(0., 0.);
+        wV3[i] = cxzero_sv();
       }
       return;
     }
