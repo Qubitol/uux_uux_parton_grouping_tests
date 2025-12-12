@@ -314,7 +314,7 @@ namespace mg5amcGpu
                                                         BufferSelectedColor& selcol,          // output: color selection
                                                         const int iflavor,
                                                         const size_t gpublocks,
-                                                        const size_t gputhreads);
+                                                        const size_t gputhreads)
     : MatrixElementKernelBase( momenta, gs, rndhel, rndcol, channelIds, matrixElements, selhel, selcol, iflavor )
     , NumberOfEvents( gpublocks * gputhreads )
     , m_couplings( this->nevt() )
@@ -451,9 +451,9 @@ namespace mg5amcGpu
     gpuLaunchKernel( computeDependentCouplings, m_gpublocks, m_gputhreads, m_gs.data(), m_couplings.data() );
     const int nevt = m_gpublocks * m_gputhreads;
 #ifdef MGONGPU_SUPPORTS_MULTICHANNEL
-    sigmaKin_getGoodHel( m_momenta.data(), m_couplings.data(), m_matrixElements.data(), m_iflavor, m_pHelJamps->data(), m_pHelNumerators->data(), m_pHelDenominators->data(), hstIsGoodHel.data(), nevt );
+    sigmaKin_getGoodHel( m_momenta.data(), m_couplings.data(), m_iflavor, m_matrixElements.data(), m_pHelJamps->data(), m_pHelNumerators->data(), m_pHelDenominators->data(), hstIsGoodHel.data(), nevt );
 #else
-    sigmaKin_getGoodHel( m_momenta.data(), m_couplings.data(), m_matrixElements.data(), m_iflavor, m_pHelJamps->data(), hstIsGoodHel.data(), nevt );
+    sigmaKin_getGoodHel( m_momenta.data(), m_couplings.data(), m_iflavor, m_matrixElements.data(), m_pHelJamps->data(), hstIsGoodHel.data(), nevt );
 #endif
     // ... 0d3. Set good helicity list in host static memory
     int nGoodHel = sigmaKin_setGoodHel( hstIsGoodHel.data() );
