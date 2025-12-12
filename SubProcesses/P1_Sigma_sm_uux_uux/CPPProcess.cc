@@ -168,9 +168,10 @@ namespace mg5amcCpu
 #endif
 
   // Helicity combinations (and filtering of "good" helicity combinations)
+  // FIXME: nmaxflavor definition not being registered for GPUs, use an ad-hoc workaround
 #ifdef MGONGPUCPP_GPUIMPL
   __device__ __constant__ short cHel[ncomb][npar];
-  __device__ __constant__ short cFlavors[nmaxflavors][npar];
+  __device__ __constant__ short cFlavors[nmaxflavor][npar];
   __device__ __constant__ int dcNGoodHel;
   __device__ __constant__ int dcGoodHel[ncomb];
 #else
