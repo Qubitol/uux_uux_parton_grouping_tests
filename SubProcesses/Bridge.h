@@ -276,14 +276,14 @@ namespace mg5amcCpu
               << std::endl;
 #endif
     m_pmek.reset( new MatrixElementKernelDevice(
-      m_devMomentaC, m_devGs, m_devRndHel, m_devRndCol, m_devChannelIds, m_devMEs, m_devSelHel, m_devSelCol, m_gpublocks, m_gputhreads, m_iflavor ) );
+      m_devMomentaC, m_devGs, m_devRndHel, m_devRndCol, m_devChannelIds, m_devMEs, m_devSelHel, m_devSelCol, m_iflavor, m_gpublocks, m_gputhreads) );
 #else
 #ifdef MGONGPUCPP_VERBOSE
     std::cout << "WARNING! Instantiate host Bridge (nevt=" << m_nevt << ")"
               << std::endl;
 #endif
     m_pmek.reset( new MatrixElementKernelHost(
-      m_hstMomentaC, m_hstGs, m_hstRndHel, m_hstRndCol, m_hstChannelIds, m_hstMEs, m_hstSelHel, m_hstSelCol, m_nevt, m_iflavor ) );
+      m_hstMomentaC, m_hstGs, m_hstRndHel, m_hstRndCol, m_hstChannelIds, m_hstMEs, m_hstSelHel, m_hstSelCol, m_iflavor, m_nevt) );
 #endif // MGONGPUCPP_GPUIMPL
     // Create a process object, read param card and set parameters
     // FIXME: the process instance can happily go out of scope because it is only
