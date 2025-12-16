@@ -26,7 +26,7 @@ c     INTEGER IEXTERNAL
       INTEGER NEVTOK ! exclude nan/abnormal MEs
       INTEGER IFLAVOR ! index of the flavor combination to calculate
 
-      IFLAVOR=0
+      IFLAVOR=1
 C
 C READ COMMAND LINE ARGUMENTS
 C (NB: most errors will crash the program !)
