@@ -34,10 +34,10 @@ C Execute the matrix-element calculation "sequence" via a Bridge on GPU/CUDA or 
 C - PBRIDGE:   the memory address of the C++ Bridge
 C - MOMENTA:   the input 4-momenta Fortran array
 C - GS:        the input Gs (running QCD coupling constant alphas) Fortran array
+C - IFLAV_VEC: the input array of flavor indices for the flavor combinations
 C - RNDHEL:    the input random number Fortran array for helicity selection
 C - RNDCOL:    the input random number Fortran array for color selection
 C - CHANID:    the input array of channels (Feynman diagrams) to enhance
-C - IFLAV_VEC: the input array of flavor indices for the flavor combinations
 C - MES:       the output matrix element Fortran array
 C - SELHEL:    the output selected helicity Fortran array
 C - SELCOL:    the output selected color Fortran array
@@ -49,10 +49,10 @@ C
          INTEGER*8 PBRIDGE
          DOUBLE PRECISION MOMENTA(*)
          DOUBLE PRECISION GS(*)
+         INTEGER*4 IFLAV_VEC(*)
          DOUBLE PRECISION RNDHEL(*)
          DOUBLE PRECISION RNDCOL(*)
          INTEGER*4 CHANID(*)
-         INTEGER*4 IFLAV_VEC(*)
          DOUBLE PRECISION MES(*)
          INTEGER*4 SELHEL(*)
          INTEGER*4 SELCOL(*)
@@ -65,9 +65,9 @@ C Execute the matrix-element calculation "sequence" via a Bridge on GPU/CUDA or 
 C - PBRIDGE:   the memory address of the C++ Bridge
 C - MOMENTA:   the input 4-momenta Fortran array
 C - GS:        the input Gs (running QCD coupling constant alphas) Fortran array
+C - IFLAV_VEC: the input array of flavor indices for the flavor combinations
 C - RNDHEL:    the input random number Fortran array for helicity selection
 C - RNDCOL:    the input random number Fortran array for color selection
-C - IFLAV_VEC: the input array of flavor indices for the flavor combinations
 C - MES:       the output matrix element Fortran array
 C - SELHEL:    the output selected helicity Fortran array
 C - SELCOL:    the output selected color Fortran array
@@ -79,9 +79,9 @@ C
          INTEGER*8 PBRIDGE
          DOUBLE PRECISION MOMENTA(*)
          DOUBLE PRECISION GS(*)
+         INTEGER*4 IFLAV_VEC(*)
          DOUBLE PRECISION RNDHEL(*)
          DOUBLE PRECISION RNDCOL(*)
-         INTEGER*4 IFLAV_VEC(*)
          DOUBLE PRECISION MES(*)
          INTEGER*4 SELHEL(*)
          INTEGER*4 SELCOL(*)
