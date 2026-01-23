@@ -97,9 +97,6 @@ namespace mg5amcCpu
     // The buffer for the output color selection
     BufferSelectedColor& m_selcol;
 
-    // The index of the flavor combination to compute
-    const int m_iflavor;
-
 #ifdef MGONGPU_CHANNELID_DEBUG
     // The events-per-channel counter for debugging
     std::map<size_t, size_t> m_nevtProcessedByChannel;

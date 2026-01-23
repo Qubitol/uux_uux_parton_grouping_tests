@@ -397,6 +397,7 @@ main( int argc, char** argv )
     //hstChannelIds[i] = channelId; // AV ChannelId arrays are not needed in check.exe (fix #892) as long as check.exe uses no-multichannel (see #896)
     //if ( i > 0 ) hstGs[i] = 0; // try hardcoding G only for event 0
     //hstGs[i] = i;
+    hstIflavorVec[i] = 1; // Fill with 1, all equal and same flavor combination
   }
 
   // Memory buffers for matrix elements
@@ -515,21 +516,20 @@ main( int argc, char** argv )
 
   // --- 0c. Create matrix element kernel [keep this in 0c for the moment]
   std::unique_ptr<MatrixElementKernelBase> pmek;
-  int iflavor = 1;
   if( !bridge )
   {
 #ifdef MGONGPUCPP_GPUIMPL
-    pmek.reset( new MatrixElementKernelDevice( devMomenta, devGs, devIflavorVec, devRndHel, devRndCol, devChannelIds, devMatrixElements, devSelHel, devSelCol, iflavor, gpublocks, gputhreads) );
+    pmek.reset( new MatrixElementKernelDevice( devMomenta, devGs, devIflavorVec, devRndHel, devRndCol, devChannelIds, devMatrixElements, devSelHel, devSelCol, gpublocks, gputhreads) );
 #else
-    pmek.reset( new MatrixElementKernelHost( hstMomenta, hstGs, hstIflavorVec, hstRndHel, hstRndCol, hstChannelIds, hstMatrixElements, hstSelHel, hstSelCol, iflavor, nevt ) );
+    pmek.reset( new MatrixElementKernelHost( hstMomenta, hstGs, hstIflavorVec, hstRndHel, hstRndCol, hstChannelIds, hstMatrixElements, hstSelHel, hstSelCol, nevt ) );
 #endif
   }
   else
   {
 #ifdef MGONGPUCPP_GPUIMPL
-    pmek.reset( new BridgeKernelDevice( hstMomenta, hstGs, hstIflavorVec, hstRndHel, hstRndCol, hstChannelIds, hstMatrixElements, hstSelHel, hstSelCol, iflavor, gpublocks, gputhreads ) );
+    pmek.reset( new BridgeKernelDevice( hstMomenta, hstGs, hstIflavorVec, hstRndHel, hstRndCol, hstChannelIds, hstMatrixElements, hstSelHel, hstSelCol, gpublocks, gputhreads ) );
 #else
-    pmek.reset( new BridgeKernelHost( hstMomenta, hstGs, hstIflavorVec, hstRndHel, hstRndCol, hstChannelIds, hstMatrixElements, hstSelHel, hstSelCol, iflavor, nevt ) );
+    pmek.reset( new BridgeKernelHost( hstMomenta, hstGs, hstIflavorVec, hstRndHel, hstRndCol, hstChannelIds, hstMatrixElements, hstSelHel, hstSelCol, nevt ) );
 #endif
   }
   int nGoodHel = 0; // the number of good helicities (out of ncomb)
