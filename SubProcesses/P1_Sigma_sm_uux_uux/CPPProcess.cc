@@ -878,7 +878,7 @@ namespace mg5amcCpu
 
   //--------------------------------------------------------------------------
 
-  __device__ __host__ int
+  __host__ __device__ inline int
   broken_symmetry_factor( const int iflavor )
   {
     int old_factor = 1;
