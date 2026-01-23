@@ -31,10 +31,10 @@ namespace mg5amcCpu
                       const BufferRndNumHelicity& rndhel,   // input: random numbers for helicity selection
                       const BufferRndNumColor& rndcol,      // input: random numbers for color selection
                       const BufferChannelIds& channelIds,   // input: channel ids for single-diagram enhancement
+                      const BufferIflavorVec& iflavorVec,   // input: flavor indices for the flavor combination
                       BufferMatrixElements& matrixElements, // output: matrix elements
                       BufferSelectedHelicity& selhel,       // output: helicity selection
                       BufferSelectedColor& selcol,          // output: color selection
-                      const int iflavor,
                       const size_t nevt);
 
     // Destructor
@@ -63,10 +63,10 @@ namespace mg5amcCpu
                       const BufferRndNumHelicity& rndhel,   // input: random numbers for helicity selection
                       const BufferRndNumColor& rndcol,      // input: random numbers for color selection
                       const BufferChannelIds& channelIds,   // input: channel ids for single-diagram enhancement
+                      const BufferIflavorVec& iflavorVec,   // input: flavor indices for the flavor combination
                       BufferMatrixElements& matrixElements, // output: matrix elements
                       BufferSelectedHelicity& selhel,       // output: helicity selection
                       BufferSelectedColor& selcol,          // output: color selection
-                      const int iflavor,
                       const size_t nevt);
 
     // Destructor
@@ -105,10 +105,10 @@ namespace mg5amcCpu
                         const BufferRndNumHelicity& rndhel,   // input: random numbers for helicity selection
                         const BufferRndNumColor& rndcol,      // input: random numbers for color selection
                         const BufferChannelIds& channelIds,   // input: channel ids for single-diagram enhancement
+                        const BufferIflavorVec& iflavorVec,   // input: flavor indices for the flavor combination
                         BufferMatrixElements& matrixElements, // output: matrix elements
                         BufferSelectedHelicity& selhel,       // output: helicity selection
                         BufferSelectedColor& selcol,          // output: color selection
-                        const int iflavor,
                         const size_t gpublocks,
                         const size_t gputhreads);
 

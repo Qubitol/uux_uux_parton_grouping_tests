@@ -20,6 +20,7 @@
 #include "HelAmps_sm.h"
 #include "MemoryAccessAmplitudes.h"
 #include "MemoryAccessChannelIds.h"
+#include "MemoryAccessIflavorVec.h"
 #include "MemoryAccessCouplings.h"
 #include "MemoryAccessCouplingsFixed.h"
 #include "MemoryAccessGs.h"
@@ -241,7 +242,7 @@ namespace mg5amcCpu
   calculate_jamps( int ihel,
                    const fptype* allmomenta,          // input: momenta[nevt*npar*4]
                    const fptype* allcouplings,        // input: couplings[nevt*ndcoup*2]
-                   const int iflavor,                 // input: index of the flavor combination
+                   const unsigned int* iflavorVec,                 // input: indices of the flavor combinations
 #ifdef MGONGPUCPP_GPUIMPL
                    fptype* allJamps,                  // output: jamp[2*ncolor*nevt] buffer for one helicity _within a super-buffer for dcNGoodHel helicities_
 #ifdef MGONGPU_SUPPORTS_MULTICHANNEL
@@ -384,6 +385,12 @@ namespace mg5amcCpu
       fptype_sv& numerators_sv = NUM_ACCESS::kernelAccess( numerators );
       fptype_sv& denominators_sv = DEN_ACCESS::kernelAccess( denominators );
 #endif
+      // Scalar iflavor for the current event (CUDA)
+      unsigned int iflavor = 0;
+      using CID_ACCESS = DeviceAccessIflavorVec; // non-trivial access: buffer includes all events
+      const uint_sv iflavor_sv = CID_ACCESS::kernelAccessConst( iflavorVec );
+      // NB: iflavor_sv is a scalar in CUDA
+      iflavor = iflavor_sv;
 
       // *** DIAGRAM 1 OF 2 ***
 
@@ -712,7 +719,7 @@ namespace mg5amcCpu
   void /* clang-format off */
   sigmaKin_getGoodHel( const fptype* allmomenta,   // input: momenta[nevt*npar*4]
                        const fptype* allcouplings, // input: couplings[nevt*ndcoup*2]
-                       const int iflavor,          // input: index of the flavor combination
+                       const unsigned int* iflavorVec,          // input: indices of the flavor combinations
                        fptype* allMEs,             // output: allMEs[nevt], |M|^2 final_avg_over_helicities
 #ifdef MGONGPU_SUPPORTS_MULTICHANNEL
                        fptype* allNumerators,      // output: multichannel numerators[nevt], running_sum_over_helicities
@@ -738,9 +745,9 @@ namespace mg5amcCpu
 #ifdef MGONGPU_SUPPORTS_MULTICHANNEL
       constexpr fptype_sv* allJamp2s = nullptr;        // no need for color selection during helicity filtering
       constexpr unsigned int* allChannelIds = nullptr; // disable multichannel single-diagram enhancement
-      gpuLaunchKernel( calculate_jamps, gpublocks, gputhreads, ihel, allmomenta, allcouplings, iflavor, allJamps, allChannelIds, allNumerators, allDenominators, allJamp2s, gpublocks * gputhreads );
+      gpuLaunchKernel( calculate_jamps, gpublocks, gputhreads, ihel, allmomenta, allcouplings, iflavorVec, allJamps, allChannelIds, allNumerators, allDenominators, allJamp2s, gpublocks * gputhreads );
 #else
-      gpuLaunchKernel( calculate_jamps, gpublocks, gputhreads, ihel, allmomenta, allcouplings, iflavor, allJamps, gpublocks * gputhreads );
+      gpuLaunchKernel( calculate_jamps, gpublocks, gputhreads, ihel, allmomenta, allcouplings, iflavorVec, allJamps, gpublocks * gputhreads );
 #endif
       gpuLaunchKernel( color_sum_kernel, gpublocks, gputhreads, allMEs, allJamps, nOneHel );
       gpuMemcpy( hstMEs, allMEs, maxtry * sizeof( fptype ), gpuMemcpyDeviceToHost );
@@ -760,7 +767,7 @@ namespace mg5amcCpu
   void
   sigmaKin_getGoodHel( const fptype* allmomenta,   // input: momenta[nevt*npar*4]
                        const fptype* allcouplings, // input: couplings[nevt*ndcoup*2]
-                       const int iflavor,          // input: index of the flavor combination
+                       const unsigned int* iflavorVec,          // input: indices of the flavor combinations
                        fptype* allMEs,             // output: allMEs[nevt], |M|^2 final_avg_over_helicities
 #ifdef MGONGPU_SUPPORTS_MULTICHANNEL
                        fptype* allNumerators,      // output: multichannel numerators[nevt], running_sum_over_helicities
@@ -816,9 +823,9 @@ namespace mg5amcCpu
 #endif
 #ifdef MGONGPU_SUPPORTS_MULTICHANNEL /* clang-format off */
         constexpr unsigned int channelId = 0; // disable multichannel single-diagram enhancement
-        calculate_jamps( ihel, allmomenta, allcouplings, iflavor, jamp_sv, channelId, allNumerators, allDenominators, jamp2_sv, ievt00 ); //maxtry?
+        calculate_jamps( ihel, allmomenta, allcouplings, iflavorVec, jamp_sv, channelId, allNumerators, allDenominators, jamp2_sv, ievt00 ); //maxtry?
 #else
-        calculate_jamps( ihel, allmomenta, allcouplings, iflavor, jamp_sv, ievt00 ); //maxtry?
+        calculate_jamps( ihel, allmomenta, allcouplings, iflavorVec, jamp_sv, ievt00 ); //maxtry?
 #endif /* clang-format on */
         color_sum_cpu( allMEs, jamp_sv, ievt00 );
         for( int ieppV = 0; ieppV < neppV; ++ieppV )
@@ -872,7 +879,7 @@ namespace mg5amcCpu
   //--------------------------------------------------------------------------
 
   int
-  broken_symmetry( const int iflavor )
+  broken_symmetry_factor( const int iflavor )
   {
     int old_factor = 1;
     int pid[] = {81, -81};
@@ -906,11 +913,11 @@ namespace mg5amcCpu
                     fptype* ghelAllDenominators,       // input/tmp: allNumerators super-buffer for nGoodHel <= ncomb individual helicities (index is ighel)
                     const unsigned int* allChannelIds, // input: multichannel channelIds[nevt] (1 to #diagrams); nullptr to disable SDE enhancement (fix #899/#911)
 #endif
-                    const fptype globaldenom,
-                    const fptype broken_sym_factor ) /* clang-format on */
+                    const unsigned int* iflavorVec,
+                    const fptype globaldenom ) /* clang-format on */
   {
     const int ievt = blockDim.x * blockIdx.x + threadIdx.x; // index of event (thread)
-    allMEs[ievt] /= (globaldenom * broken_sym_factor);
+    allMEs[ievt] /= (globaldenom * broken_symmetry_factor(iflavorVec[ievt]);
 #ifdef MGONGPU_SUPPORTS_MULTICHANNEL
     const int nevt = gridDim.x * blockDim.x;
     if( allChannelIds != nullptr ) // fix segfault #892 (not 'channelIds[0] != 0')
@@ -1043,11 +1050,11 @@ namespace mg5amcCpu
   sigmaKin( const fptype* allmomenta,           // input: momenta[nevt*npar*4]
             const fptype* allcouplings,         // input: couplings[nevt*ndcoup*2]
             const fptype* allrndhel,            // input: random numbers[nevt] for helicity selection
-            const int iflavor,                  // input: index of the flavor combination
 #ifdef MGONGPU_SUPPORTS_MULTICHANNEL
             const fptype* allrndcol,            // input: random numbers[nevt] for color selection
             const unsigned int* allChannelIds,  // input: multichannel channelIds[nevt] (1 to #diagrams); nullptr to disable single-diagram enhancement (fix #899/#911)
 #endif
+            const unsigned int* iflavorVec,          // input: indices of the flavor combinations
             fptype* allMEs,                     // output: allMEs[nevt], |M|^2 final_avg_over_helicities
             int* allselhel,                     // output: helicity selection[nevt]
 #ifdef MGONGPUCPP_GPUIMPL
@@ -1088,8 +1095,6 @@ namespace mg5amcCpu
 
     // Denominators: spins, colors and identical particles
     constexpr int helcolDenominators[1] = { 36 }; // assume nprocesses == 1 (#272 and #343)
-    // Broken symmetry factor
-    const int broken_sym_factor = broken_symmetry(iflavor);
 
 #ifndef MGONGPUCPP_GPUIMPL
     //assert( (size_t)(allmomenta) % mgOnGpu::cppAlign == 0 ); // SANITY CHECK: require SIMD-friendly alignment [COMMENT OUT TO TEST MISALIGNED ACCESS]
@@ -1154,9 +1159,9 @@ namespace mg5amcCpu
 #ifdef MGONGPU_SUPPORTS_MULTICHANNEL
       fptype* hAllNumerators = ghelAllNumerators + ighel * nevt;
       fptype* hAllDenominators = ghelAllDenominators + ighel * nevt;
-      gpuLaunchKernelStream( calculate_jamps, gpublocks, gputhreads, ghelStreams[ighel], ihel, allmomenta, allcouplings, iflavor, hAllJamps, allChannelIds, hAllNumerators, hAllDenominators, colAllJamp2s, nevt );
+      gpuLaunchKernelStream( calculate_jamps, gpublocks, gputhreads, ghelStreams[ighel], ihel, allmomenta, allcouplings, iflavorVec, hAllJamps, allChannelIds, hAllNumerators, hAllDenominators, colAllJamp2s, nevt );
 #else
-      gpuLaunchKernelStream( calculate_jamps, gpublocks, gputhreads, ghelStreams[ighel], ihel, allmomenta, allcouplings, iflavor, hAllJamps, nevt );
+      gpuLaunchKernelStream( calculate_jamps, gpublocks, gputhreads, ghelStreams[ighel], ihel, allmomenta, allcouplings, iflavorVec, hAllJamps, nevt );
 #endif
     }
     // (2) Then compute the ME for that helicity from the color sum of QCD partial amplitudes jamps
@@ -1253,9 +1258,9 @@ namespace mg5amcCpu
         cxtype_sv jamp_sv[nParity * ncolor] = {}; // fixed nasty bug (omitting 'nParity' caused memory corruptions after calling calculate_jamps)
 #ifdef MGONGPU_SUPPORTS_MULTICHANNEL
         // **NB! in "mixed" precision, using SIMD, calculate_jamps computes MEs for TWO neppV pages with a single channelId! #924
-        calculate_jamps( ihel, allmomenta, allcouplings, iflavor, jamp_sv, channelId, allNumerators, allDenominators, jamp2_sv, ievt00 );
+        calculate_jamps( ihel, allmomenta, allcouplings, iflavorVec, jamp_sv, channelId, allNumerators, allDenominators, jamp2_sv, ievt00 );
 #else
-        calculate_jamps( ihel, allmomenta, allcouplings, iflavor, jamp_sv, ievt00 );
+        calculate_jamps( ihel, allmomenta, allcouplings, iflavorVec, jamp_sv, ievt00 );
 #endif
         color_sum_cpu( allMEs, jamp_sv, ievt00 );
         MEs_ighel[ighel] = E_ACCESS::kernelAccess( E_ACCESS::ieventAccessRecord( allMEs, ievt00 ) );
@@ -1404,9 +1409,9 @@ namespace mg5amcCpu
     // Normalise also according to flavor for parton grouping (broken_sym_factor)
 #ifdef MGONGPUCPP_GPUIMPL
 #ifdef MGONGPU_SUPPORTS_MULTICHANNEL
-    gpuLaunchKernel( normalise_output, gpublocks, gputhreads, allMEs, ghelAllNumerators, ghelAllDenominators, allChannelIds, helcolDenominators[0], broken_sym_factor );
+    gpuLaunchKernel( normalise_output, gpublocks, gputhreads, allMEs, ghelAllNumerators, ghelAllDenominators, allChannelIds, iflavorVec, helcolDenominators[0] );
 #else
-    gpuLaunchKernel( normalise_output, gpublocks, gputhreads, allMEs, helcolDenominators[0], broken_sym_factor );
+    gpuLaunchKernel( normalise_output, gpublocks, gputhreads, allMEs, iflavorVec, helcolDenominators[0] );
 #endif
 #else
     for( int ipagV = 0; ipagV < npagV; ++ipagV )
@@ -1414,7 +1419,7 @@ namespace mg5amcCpu
       const int ievt0 = ipagV * neppV;
       fptype* MEs = E_ACCESS::ieventAccessRecord( allMEs, ievt0 );
       fptype_sv& MEs_sv = E_ACCESS::kernelAccess( MEs );
-      MEs_sv /= (helcolDenominators[0] * broken_sym_factor);
+      MEs_sv /= (helcolDenominators[0] * broken_symmetry_factor(iflavorVec[ievt0]); // iflavorVec has same entries per warp
 #ifdef MGONGPU_SUPPORTS_MULTICHANNEL
       if( allChannelIds != nullptr ) // fix segfault #892 (not 'channelIds[0] != 0')
       {

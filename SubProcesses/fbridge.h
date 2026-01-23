@@ -19,7 +19,7 @@ extern "C"
 
   using FORTRANFPTYPE = double;
 
-  void fbridgecreate_( CppObjectInFortran** ppbridge, const int* piflavorF, const int* pnevtF, const int* pnparF, const int* pnp4F );
+  void fbridgecreate_( CppObjectInFortran** ppbridge, const int* pnevtF, const int* pnparF, const int* pnp4F );
 
   void fbridgedelete_( CppObjectInFortran** ppbridge );
 
@@ -29,6 +29,7 @@ extern "C"
                          const FORTRANFPTYPE* rndhel,
                          const FORTRANFPTYPE* rndcol,
                          const unsigned int* channelIds,
+                         const unsigned int* iflavorVec,
                          FORTRANFPTYPE* mes,
                          int* selhel,
                          int* selcol,
@@ -39,6 +40,7 @@ extern "C"
                                         const FORTRANFPTYPE* gs,
                                         const FORTRANFPTYPE* rndhel,
                                         const FORTRANFPTYPE* rndcol,
+                                        const unsigned int* iflavorVec,
                                         FORTRANFPTYPE* mes,
                                         int* selhel,
                                         int* selcol,

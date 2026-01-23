@@ -34,6 +34,7 @@ namespace mg5amcCpu
                              const BufferRndNumHelicity& rndhel,   // input: random numbers for helicity selection
                              const BufferRndNumColor& rndcol,      // input: random numbers for color selection
                              const BufferChannelIds& channelIds,   // input: channel ids for single-diagram enhancement
+                             const BufferIflavorVec& iflavorVec,   // input: flavor indices for the flavor combination
                              BufferMatrixElements& matrixElements, // output: matrix elements
                              BufferSelectedHelicity& selhel,       // output: helicity selection
                              BufferSelectedColor& selcol,          // output: color selection
@@ -85,6 +86,9 @@ namespace mg5amcCpu
     // The buffer for the channel ids for single-diagram enhancement
     const BufferChannelIds& m_channelIds;
 
+    // The buffer for the flavor indices for the flavor combination
+    const BufferIflavorVec& m_iflavorVec;
+
     // The buffer for the output matrix elements
     BufferMatrixElements& m_matrixElements;
 
@@ -120,6 +124,7 @@ namespace mg5amcCpu
                              const BufferRndNumHelicity& rndhel,   // input: random numbers for helicity selection
                              const BufferRndNumColor& rndcol,      // input: random numbers for color selection
                              const BufferChannelIds& channelIds,   // input: channel ids for single-diagram enhancement
+                             const BufferIflavorVec& iflavorVec,   // input: flavor indices for the flavor combination
                              BufferMatrixElements& matrixElements, // output: matrix elements
                              BufferSelectedHelicity& selhel,       // output: helicity selection
                              BufferSelectedColor& selcol,          // output: color selection
@@ -173,6 +178,7 @@ namespace mg5amcCpu
                                const BufferRndNumHelicity& rndhel,   // input: random numbers for helicity selection
                                const BufferRndNumColor& rndcol,      // input: random numbers for color selection
                                const BufferChannelIds& channelIds,   // input: channel ids for single-diagram enhancement
+                               const BufferIflavorVec& iflavorVec,   // input: flavor indices for the flavor combination
                                BufferMatrixElements& matrixElements, // output: matrix elements
                                BufferSelectedHelicity& selhel,       // output: helicity selection
                                BufferSelectedColor& selcol,          // output: color selection
