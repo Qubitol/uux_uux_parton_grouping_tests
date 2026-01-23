@@ -314,7 +314,7 @@ namespace mg5amcCpu
     cxtype_sv amp_sv[1];      // invariant amplitude for one given Feynman diagram
 
     // Proof of concept for using fptype* in the interface
-    fptype* w_fp[nwf];
+    // fptype* w_fp[nwf];
     // Wrap the memory into ALOHAOBJ
     ALOHAOBJ aloha_obj[nwf];
     for( int iwf = 0; iwf < nwf; iwf++ ) aloha_obj[iwf] = ALOHAOBJ{pvec_sv[iwf], w_sv[iwf]};
@@ -1419,7 +1419,7 @@ namespace mg5amcCpu
       const int ievt0 = ipagV * neppV;
       fptype* MEs = E_ACCESS::ieventAccessRecord( allMEs, ievt0 );
       fptype_sv& MEs_sv = E_ACCESS::kernelAccess( MEs );
-      MEs_sv /= (helcolDenominators[0] * broken_symmetry_factor(iflavorVec[ievt0]); // iflavorVec has same entries per warp
+      MEs_sv /= (helcolDenominators[0] * broken_symmetry_factor(iflavorVec[ievt0])); // iflavorVec has same entries per warp
 #ifdef MGONGPU_SUPPORTS_MULTICHANNEL
       if( allChannelIds != nullptr ) // fix segfault #892 (not 'channelIds[0] != 0')
       {
