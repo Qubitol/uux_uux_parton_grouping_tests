@@ -379,6 +379,14 @@ main( int argc, char** argv )
   DeviceBufferChannelIds devChannelIds( nevt );
 #endif
 
+  // Memory buffer for iflavorVec
+#ifndef MGONGPUCPP_GPUIMPL
+  HostBufferChannelIds hstIflavorVec( nevt );
+#else
+  PinnedHostBufferChannelIds hstIflavorVec( nevt );
+  DeviceBufferChannelIds devIflavorVec( nevt );
+#endif
+
   // Hardcode Gs for now (eventually they should come from Fortran MadEvent)
   // Hardcode channelID to 0
   //constexpr unsigned int channelId = 0; // TEMPORARY? disable multi-channel in check.exe and gcheck.exe #466
