@@ -381,10 +381,10 @@ main( int argc, char** argv )
 
   // Memory buffer for iflavorVec
 #ifndef MGONGPUCPP_GPUIMPL
-  HostBufferChannelIds hstIflavorVec( nevt );
+  HostBufferIflavorVec hstIflavorVec( nevt );
 #else
-  PinnedHostBufferChannelIds hstIflavorVec( nevt );
-  DeviceBufferChannelIds devIflavorVec( nevt );
+  PinnedHostBufferIflavorVec hstIflavorVec( nevt );
+  DeviceBufferIflavorVec devIflavorVec( nevt );
 #endif
 
   // Hardcode Gs for now (eventually they should come from Fortran MadEvent)
@@ -519,17 +519,17 @@ main( int argc, char** argv )
   if( !bridge )
   {
 #ifdef MGONGPUCPP_GPUIMPL
-    pmek.reset( new MatrixElementKernelDevice( devMomenta, devGs, devRndHel, devRndCol, devChannelIds, devMatrixElements, devSelHel, devSelCol, iflavor, gpublocks, gputhreads) );
+    pmek.reset( new MatrixElementKernelDevice( devMomenta, devGs, devIflavorVec, devRndHel, devRndCol, devChannelIds, devMatrixElements, devSelHel, devSelCol, iflavor, gpublocks, gputhreads) );
 #else
-    pmek.reset( new MatrixElementKernelHost( hstMomenta, hstGs, hstRndHel, hstRndCol, hstChannelIds, hstMatrixElements, hstSelHel, hstSelCol, iflavor, nevt ) );
+    pmek.reset( new MatrixElementKernelHost( hstMomenta, hstGs, hstIflavorVec, hstRndHel, hstRndCol, hstChannelIds, hstMatrixElements, hstSelHel, hstSelCol, iflavor, nevt ) );
 #endif
   }
   else
   {
 #ifdef MGONGPUCPP_GPUIMPL
-    pmek.reset( new BridgeKernelDevice( hstMomenta, hstGs, hstRndHel, hstRndCol, hstChannelIds, hstMatrixElements, hstSelHel, hstSelCol, iflavor, gpublocks, gputhreads ) );
+    pmek.reset( new BridgeKernelDevice( hstMomenta, hstGs, hstIflavorVec, hstRndHel, hstRndCol, hstChannelIds, hstMatrixElements, hstSelHel, hstSelCol, iflavor, gpublocks, gputhreads ) );
 #else
-    pmek.reset( new BridgeKernelHost( hstMomenta, hstGs, hstRndHel, hstRndCol, hstChannelIds, hstMatrixElements, hstSelHel, hstSelCol, iflavor, nevt ) );
+    pmek.reset( new BridgeKernelHost( hstMomenta, hstGs, hstIflavorVec, hstRndHel, hstRndCol, hstChannelIds, hstMatrixElements, hstSelHel, hstSelCol, iflavor, nevt ) );
 #endif
   }
   int nGoodHel = 0; // the number of good helicities (out of ncomb)

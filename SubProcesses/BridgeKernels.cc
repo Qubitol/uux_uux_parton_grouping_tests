@@ -25,15 +25,15 @@ namespace mg5amcCpu
 
   BridgeKernelBase::BridgeKernelBase( const BufferMomenta& momenta,         // input: momenta
                                       const BufferGs& gs,                   // input: gs for alphaS
+                                      const BufferIflavorVec& iflavorVec,   // input: flavor indices for the flavor combination
                                       const BufferRndNumHelicity& rndhel,   // input: random numbers for helicity selection
                                       const BufferRndNumColor& rndcol,      // input: random numbers for color selection
                                       const BufferChannelIds& channelIds,   // input: channel ids for single-diagram enhancement
-                                      const BufferIflavorVec& iflavorVec,   // input: flavor indices for the flavor combination
                                       BufferMatrixElements& matrixElements, // output: matrix elements
                                       BufferSelectedHelicity& selhel,       // output: helicity selection
                                       BufferSelectedColor& selcol,          // output: color selection
                                       const size_t nevt)
-    : MatrixElementKernelBase( momenta, gs, rndhel, rndcol, channelIds, iflavorVec, matrixElements, selhel, selcol )
+    : MatrixElementKernelBase( momenta, gs, iflavorVec, rndhel, rndcol, channelIds, matrixElements, selhel, selcol )
     , NumberOfEvents( nevt )
     , m_bridge( nevt, npar, np4 )
   {
@@ -56,15 +56,15 @@ namespace mg5amcCpu
 
   BridgeKernelHost::BridgeKernelHost( const BufferMomenta& momenta,         // input: momenta
                                       const BufferGs& gs,                   // input: Gs for alphaS
+                                      const BufferIflavorVec& iflavorVec,   // input: flavor indices for the flavor combination
                                       const BufferRndNumHelicity& rndhel,   // input: random numbers for helicity selection
                                       const BufferRndNumColor& rndcol,      // input: random numbers for color selection
                                       const BufferChannelIds& channelIds,   // input: channel ids for single-diagram enhancement
-                                      const BufferIflavorVec& iflavorVec,   // input: flavor indices for the flavor combination
                                       BufferMatrixElements& matrixElements, // output: matrix elements
                                       BufferSelectedHelicity& selhel,       // output: helicity selection
                                       BufferSelectedColor& selcol,          // output: color selection
                                       const size_t nevt)
-    : BridgeKernelBase( momenta, gs, rndhel, rndcol, channelIds, iflavorVec, matrixElements, selhel, selcol, nevt)
+    : BridgeKernelBase( momenta, gs, iflavorVec, rndhel, rndcol, channelIds, matrixElements, selhel, selcol, nevt)
     , m_fortranMomenta( nevt )
   {
   }
@@ -82,7 +82,7 @@ namespace mg5amcCpu
   {
     constexpr bool goodHelOnly = true;
     constexpr unsigned int* pChannelIds = nullptr; // disable multi-channel for helicity filtering
-    m_bridge.cpu_sequence( m_fortranMomenta.data(), m_gs.data(), m_rndhel.data(), m_rndcol.data(), pChannelIds, m_iflavorVec.data(), m_matrixElements.data(), m_selhel.data(), m_selcol.data(), goodHelOnly );
+    m_bridge.cpu_sequence( m_fortranMomenta.data(), m_gs.data(), m_iflavorVec.data(), m_rndhel.data(), m_rndcol.data(), pChannelIds, m_matrixElements.data(), m_selhel.data(), m_selcol.data(), goodHelOnly );
     return m_bridge.nGoodHel();
   }
 
@@ -92,7 +92,7 @@ namespace mg5amcCpu
   {
     constexpr bool goodHelOnly = false;
     const unsigned int* pChannelIds = ( useChannelIds ? m_channelIds.data() : nullptr );
-    m_bridge.cpu_sequence( m_fortranMomenta.data(), m_gs.data(), m_rndhel.data(), m_rndcol.data(), pChannelIds, m_iflavorVec.data(), m_matrixElements.data(), m_selhel.data(), m_selcol.data(), goodHelOnly );
+    m_bridge.cpu_sequence( m_fortranMomenta.data(), m_gs.data(), m_iflavorVec.data(), m_rndhel.data(), m_rndcol.data(), pChannelIds, m_matrixElements.data(), m_selhel.data(), m_selcol.data(), goodHelOnly );
   }
 
   //--------------------------------------------------------------------------
@@ -110,16 +110,16 @@ namespace mg5amcGpu
 
   BridgeKernelDevice::BridgeKernelDevice( const BufferMomenta& momenta,         // input: momenta
                                           const BufferGs& gs,                   // input: Gs for alphaS
+                                          const BufferIflavorVec& iflavorVec,   // input: flavor indices for the flavor combination
                                           const BufferRndNumHelicity& rndhel,   // input: random numbers for helicity selection
                                           const BufferRndNumColor& rndcol,      // input: random numbers for color selection
                                           const BufferChannelIds& channelIds,   // input: channel ids for single-diagram enhancement
-                                          const BufferIflavorVec& iflavorVec,   // input: flavor indices for the flavor combination
                                           BufferMatrixElements& matrixElements, // output: matrix elements
                                           BufferSelectedHelicity& selhel,       // output: helicity selection
                                           BufferSelectedColor& selcol,          // output: color selection
                                           const size_t gpublocks,
                                           const size_t gputhreads)
-    : BridgeKernelBase( momenta, gs, rndhel, rndcol, channelIds, iflavorVec, matrixElements, selhel, selcol, gpublocks * gputhreads)
+    : BridgeKernelBase( momenta, gs, iflavorVec, rndhel, rndcol, channelIds, matrixElements, selhel, selcol, gpublocks * gputhreads)
     , m_fortranMomenta( nevt() )
     , m_gpublocks( gpublocks )
     , m_gputhreads( gputhreads )
@@ -142,7 +142,7 @@ namespace mg5amcGpu
   {
     constexpr bool goodHelOnly = true;
     constexpr unsigned int* pChannelIds = nullptr; // disable multi-channel for helicity filtering
-    m_bridge.gpu_sequence( m_fortranMomenta.data(), m_gs.data(), m_rndhel.data(), m_rndcol.data(), pChannelIds, m_iflavorVec.data(), m_matrixElements.data(), m_selhel.data(), m_selcol.data(), goodHelOnly );
+    m_bridge.gpu_sequence( m_fortranMomenta.data(), m_gs.data(), m_iflavorVec.data(), m_rndhel.data(), m_rndcol.data(), pChannelIds, m_matrixElements.data(), m_selhel.data(), m_selcol.data(), goodHelOnly );
     return m_bridge.nGoodHel();
   }
 
@@ -152,7 +152,7 @@ namespace mg5amcGpu
   {
     constexpr bool goodHelOnly = false;
     const unsigned int* pChannelIds = ( useChannelIds ? m_channelIds.data() : nullptr );
-    m_bridge.gpu_sequence( m_fortranMomenta.data(), m_gs.data(), m_rndhel.data(), m_rndcol.data(), pChannelIds, m_iflavorVec.data(), m_matrixElements.data(), m_selhel.data(), m_selcol.data(), goodHelOnly );
+    m_bridge.gpu_sequence( m_fortranMomenta.data(), m_gs.data(), m_iflavorVec.data(), m_rndhel.data(), m_rndcol.data(), pChannelIds, m_matrixElements.data(), m_selhel.data(), m_selcol.data(), goodHelOnly );
   }
 
   //--------------------------------------------------------------------------

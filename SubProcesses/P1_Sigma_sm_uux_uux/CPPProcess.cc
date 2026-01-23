@@ -1049,12 +1049,12 @@ namespace mg5amcCpu
   void /* clang-format off */
   sigmaKin( const fptype* allmomenta,           // input: momenta[nevt*npar*4]
             const fptype* allcouplings,         // input: couplings[nevt*ndcoup*2]
+            const unsigned int* iflavorVec,          // input: indices of the flavor combinations
             const fptype* allrndhel,            // input: random numbers[nevt] for helicity selection
 #ifdef MGONGPU_SUPPORTS_MULTICHANNEL
             const fptype* allrndcol,            // input: random numbers[nevt] for color selection
             const unsigned int* allChannelIds,  // input: multichannel channelIds[nevt] (1 to #diagrams); nullptr to disable single-diagram enhancement (fix #899/#911)
 #endif
-            const unsigned int* iflavorVec,          // input: indices of the flavor combinations
             fptype* allMEs,                     // output: allMEs[nevt], |M|^2 final_avg_over_helicities
             int* allselhel,                     // output: helicity selection[nevt]
 #ifdef MGONGPUCPP_GPUIMPL
