@@ -917,7 +917,7 @@ namespace mg5amcCpu
                     const fptype globaldenom ) /* clang-format on */
   {
     const int ievt = blockDim.x * blockIdx.x + threadIdx.x; // index of event (thread)
-    allMEs[ievt] /= (globaldenom * broken_symmetry_factor(iflavorVec[ievt]);
+    allMEs[ievt] /= (globaldenom * broken_symmetry_factor(iflavorVec[ievt]));
 #ifdef MGONGPU_SUPPORTS_MULTICHANNEL
     const int nevt = gridDim.x * blockDim.x;
     if( allChannelIds != nullptr ) // fix segfault #892 (not 'channelIds[0] != 0')
