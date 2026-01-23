@@ -115,18 +115,18 @@ namespace mg5amcCpu
    * @param momenta the pointer to the input 4-momenta
    * @param gs the pointer to the input Gs (running QCD coupling constant
    * alphas)
+   * @param iflavorVec the index of the flavor combination
    * @param rndhel the pointer to the input random numbers for helicity
    * selection
    * @param rndcol the pointer to the input random numbers for color selection
    * @param channelIds the Feynman diagram to enhance in multi-channel mode if 1
    * to n
-   * @param iflavorVec the index of the flavor combination
    * @param mes the pointer to the output matrix elements
    * @param selhel the pointer to the output selected helicities
    * @param selcol the pointer to the output selected colors
    * @param goodHelOnly quit after computing good helicities?
    */
-    void gpu_sequence( const FORTRANFPTYPE* momenta, const FORTRANFPTYPE* gs, const FORTRANFPTYPE* rndhel, const FORTRANFPTYPE* rndcol, const unsigned int* channelIds, const unsigned int* iflavorVec, FORTRANFPTYPE* mes, int* selhel, int* selcol, const bool goodHelOnly = false );
+    void gpu_sequence( const FORTRANFPTYPE* momenta, const FORTRANFPTYPE* gs, const unsigned int* iflavorVec, const FORTRANFPTYPE* rndhel, const FORTRANFPTYPE* rndcol, const unsigned int* channelIds, FORTRANFPTYPE* mes, int* selhel, int* selcol, const bool goodHelOnly = false );
 #else
     /**
    * Sequence to be executed for the vectorized CPU matrix element calculation
@@ -134,18 +134,18 @@ namespace mg5amcCpu
    * @param momenta the pointer to the input 4-momenta
    * @param gs the pointer to the input Gs (running QCD coupling constant
    * alphas)
+   * @param iflavorVec the index of the flavor combination
    * @param rndhel the pointer to the input random numbers for helicity
    * selection
    * @param rndcol the pointer to the input random numbers for color selection
    * @param channelIds the Feynman diagram to enhance in multi-channel mode if 1
    * to n
-   * @param iflavorVec the index of the flavor combination
    * @param mes the pointer to the output matrix elements
    * @param selhel the pointer to the output selected helicities
    * @param selcol the pointer to the output selected colors
    * @param goodHelOnly quit after computing good helicities?
    */
-    void cpu_sequence( const FORTRANFPTYPE* momenta, const FORTRANFPTYPE* gs, const FORTRANFPTYPE* rndhel, const FORTRANFPTYPE* rndcol, const unsigned int* channelIds, const unsigned int* iflavorVec, FORTRANFPTYPE* mes, int* selhel, int* selcol, const bool goodHelOnly = false );
+    void cpu_sequence( const FORTRANFPTYPE* momenta, const FORTRANFPTYPE* gs, const unsigned int* iflavorVec, const FORTRANFPTYPE* rndhel, const FORTRANFPTYPE* rndcol, const unsigned int* channelIds, FORTRANFPTYPE* mes, int* selhel, int* selcol, const bool goodHelOnly = false );
 #endif
 
     // Return the number of good helicities (-1 initially when they have not yet
@@ -169,13 +169,14 @@ namespace mg5amcCpu
     DeviceBuffer<FORTRANFPTYPE, sizePerEventMomenta> m_devMomentaF;
     DeviceBufferMomenta m_devMomentaC;
     DeviceBufferGs m_devGs;
+    DeviceBufferIflavorVec m_devIflavorVec;
     DeviceBufferRndNumHelicity m_devRndHel;
     DeviceBufferRndNumColor m_devRndCol;
     DeviceBufferMatrixElements m_devMEs;
     DeviceBufferSelectedHelicity m_devSelHel;
     DeviceBufferSelectedColor m_devSelCol;
     DeviceBufferChannelIds m_devChannelIds;
-    DeviceBufferIflavorVec m_devIflavorVec;
+    PinnedHostBufferIflavorVec m_hstIflavorVec;
     PinnedHostBufferGs m_hstGs;
     PinnedHostBufferRndNumHelicity m_hstRndHel;
     PinnedHostBufferRndNumColor m_hstRndCol;
@@ -183,7 +184,6 @@ namespace mg5amcCpu
     PinnedHostBufferSelectedHelicity m_hstSelHel;
     PinnedHostBufferSelectedColor m_hstSelCol;
     PinnedHostBufferChannelIds m_hstChannelIds;
-    PinnedHostBufferIflavorVec m_hstIflavorVec;
     std::unique_ptr<MatrixElementKernelDevice> m_pmek;
     // static constexpr int s_gputhreadsmin = 16; // minimum number of gpu threads
     // (TEST VALUE FOR MADEVENT)
@@ -192,13 +192,13 @@ namespace mg5amcCpu
 #else
     HostBufferMomenta m_hstMomentaC;
     HostBufferGs m_hstGs;
+    HostBufferIflavorVec m_hstIflavorVec;
     HostBufferRndNumHelicity m_hstRndHel;
     HostBufferRndNumColor m_hstRndCol;
     HostBufferMatrixElements m_hstMEs;
     HostBufferSelectedHelicity m_hstSelHel;
     HostBufferSelectedColor m_hstSelCol;
     HostBufferChannelIds m_hstChannelIds;
-    HostBufferIflavorVec m_hstIflavorVec;
     std::unique_ptr<MatrixElementKernelHost> m_pmek;
 #endif
   };
@@ -234,6 +234,7 @@ namespace mg5amcCpu
     , m_gpublocks( m_nevt / m_gputhreads ) // this ensures m_nevt <= m_gpublocks*m_gputhreads
     , m_devMomentaF( m_nevt )
     , m_devMomentaC( m_nevt )
+    , m_devIflavorVec( m_nevt )
     , m_devGs( m_nevt )
     , m_devRndHel( m_nevt )
     , m_devRndCol( m_nevt )
@@ -241,18 +242,17 @@ namespace mg5amcCpu
     , m_devSelHel( m_nevt )
     , m_devSelCol( m_nevt )
     , m_devChannelIds( m_nevt )
-    , m_devIflavorVec( m_nevt )
 #else
     , m_hstMomentaC( m_nevt )
 #endif
     , m_hstGs( m_nevt )
+    , m_hstIflavorVec( m_nevt )
     , m_hstRndHel( m_nevt )
     , m_hstRndCol( m_nevt )
     , m_hstMEs( m_nevt )
     , m_hstSelHel( m_nevt )
     , m_hstSelCol( m_nevt )
     , m_hstChannelIds( m_nevt )
-    , m_hstIflavorVec( m_nevt )
     , m_pmek( nullptr )
   {
     if( nparF != CPPProcess::npar )
@@ -347,10 +347,10 @@ paramCard; #endif
   template<typename FORTRANFPTYPE>
   void Bridge<FORTRANFPTYPE>::gpu_sequence( const FORTRANFPTYPE* momenta,
                                             const FORTRANFPTYPE* gs,
+                                            const unsigned int* iflavorVec,
                                             const FORTRANFPTYPE* rndhel,
                                             const FORTRANFPTYPE* rndcol,
                                             const unsigned int* channelIds,
-                                            const unsigned int* iflavorVec,
                                             FORTRANFPTYPE* mes,
                                             int* selhel,
                                             int* selcol,
@@ -431,10 +431,10 @@ paramCard; #endif
   template<typename FORTRANFPTYPE>
   void Bridge<FORTRANFPTYPE>::cpu_sequence( const FORTRANFPTYPE* momenta,
                                             const FORTRANFPTYPE* gs,
+                                            const unsigned int* iflavorVec,
                                             const FORTRANFPTYPE* rndhel,
                                             const FORTRANFPTYPE* rndcol,
                                             const unsigned int* channelIds,
-                                            const unsigned int* iflavorVec,
                                             FORTRANFPTYPE* mes,
                                             int* selhel,
                                             int* selcol,
