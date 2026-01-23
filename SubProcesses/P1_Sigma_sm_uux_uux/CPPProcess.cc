@@ -387,8 +387,12 @@ namespace mg5amcCpu
 #endif
       // Scalar iflavor for the current event (CUDA)
       unsigned int iflavor = 0;
-      using CID_ACCESS = DeviceAccessIflavorVec; // non-trivial access: buffer includes all events
-      const uint_sv iflavor_sv = CID_ACCESS::kernelAccessConst( iflavorVec );
+#ifdef MGONGPUCPP_GPUIMPL
+      using ACCESS = DeviceAccessIflavorVec; // non-trivial access: buffer includes all events
+#else
+      using ACCESS = HostAccessIflavorVec;
+#endif
+      const uint_sv iflavor_sv = ACCESS::kernelAccessConst( iflavorVec );
       // NB: iflavor_sv is a scalar in CUDA
       iflavor = iflavor_sv;
 
