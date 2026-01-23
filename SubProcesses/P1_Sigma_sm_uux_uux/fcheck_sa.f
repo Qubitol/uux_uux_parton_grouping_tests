@@ -17,9 +17,9 @@ C Further modified by: A. Valassi (2022-2024) for the MG5aMC CUDACPP plugin.
 c     INTEGER IEXTERNAL
       DOUBLE PRECISION MOMENTA(0:NP4-1, NEXTERNAL, NEVTMAX) ! c-array momenta[nevt][nexternal][np4]
       DOUBLE PRECISION GS(NEVTMAX)
+      INTEGER IFLAV_VEC(NEVTMAX) ! index of the flavor combination to calculate
       DOUBLE PRECISION RNDHEL(NEVTMAX) ! not yet used
       DOUBLE PRECISION RNDCOL(NEVTMAX) ! not yet used
-      INTEGER IFLAV_VEC(NEVTMAX) ! index of the flavor combination to calculate
       DOUBLE PRECISION MES(NEVTMAX)
       INTEGER*4 SELHEL(NEVTMAX) ! not yet used
       INTEGER*4 SELCOL(NEVTMAX) ! not yet used
@@ -66,7 +66,7 @@ C
           GS(IEVT) = 1.2177157847767195 ! fixed G for aS=0.118 (hardcoded for now in check_sa.cc, fcheck_sa.f, runTest.cc)
         END DO
         CALL FBRIDGESEQUENCE_NOMULTICHANNEL(BRIDGE, MOMENTA, GS, ! TEMPORARY? disable multi-channel in fcheck.exe and fgcheck.exe #466
-    &    RNDHEL, RNDCOL, IFLAV_VEC, MES, SELHEL, SELCOL, .FALSE.) ! do not quit after computing helicities
+    &    IFLAV_VEC, RNDHEL, RNDCOL, MES, SELHEL, SELCOL, .FALSE.) ! do not quit after computing helicities
         DO IEVT = 1, NEVT
 c         DO IEXTERNAL = 1, NEXTERNAL
 c           WRITE(6,*) 'MOMENTA', IEVT, IEXTERNAL,
