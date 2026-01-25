@@ -272,6 +272,7 @@ namespace mg5amcCpu
     using A_ACCESS = DeviceAccessAmplitudes;      // TRIVIAL ACCESS (no kernel splitting yet): buffer for one event
     using CD_ACCESS = DeviceAccessCouplings;      // non-trivial access (dependent couplings): buffer includes all events
     using CI_ACCESS = DeviceAccessCouplingsFixed; // TRIVIAL access (independent couplings): buffer for one event
+    using F_ACCESS = DeviceAccessIflavorVec;
 #ifdef MGONGPU_SUPPORTS_MULTICHANNEL
     using NUM_ACCESS = DeviceAccessNumerators;    // non-trivial access: buffer includes all events
     using DEN_ACCESS = DeviceAccessDenominators;  // non-trivial access: buffer includes all events
@@ -283,6 +284,7 @@ namespace mg5amcCpu
     using A_ACCESS = HostAccessAmplitudes;      // TRIVIAL ACCESS (no kernel splitting yet): buffer for one event
     using CD_ACCESS = HostAccessCouplings;      // non-trivial access (dependent couplings): buffer includes all events
     using CI_ACCESS = HostAccessCouplingsFixed; // TRIVIAL access (independent couplings): buffer for one event
+    using F_ACCESS = HostAccessIflavorVec;
 #ifdef MGONGPU_SUPPORTS_MULTICHANNEL
     using NUM_ACCESS = HostAccessNumerators;    // non-trivial access: buffer includes all events
     using DEN_ACCESS = HostAccessDenominators;  // non-trivial access: buffer includes all events
@@ -385,16 +387,16 @@ namespace mg5amcCpu
       fptype_sv& numerators_sv = NUM_ACCESS::kernelAccess( numerators );
       fptype_sv& denominators_sv = DEN_ACCESS::kernelAccess( denominators );
 #endif
-      // Scalar iflavor for the current event (CUDA)
-      unsigned int iflavor = 0;
+      // Scalar iflavor for the current event
+      // for GPU it is an int
+      // for SIMD it is also an int, since it is constant across the SIMD vector
+      const unsigned int iflavor = 0;
+      const uint_sv iflavor_sv = FL_ACCESS::kernelAccessConst( iflavorVec );
 #ifdef MGONGPUCPP_GPUIMPL
-      using ACCESS = DeviceAccessIflavorVec; // non-trivial access: buffer includes all events
-#else
-      using ACCESS = HostAccessIflavorVec;
-#endif
-      const uint_sv iflavor_sv = ACCESS::kernelAccessConst( iflavorVec );
-      // NB: iflavor_sv is a scalar in CUDA
       iflavor = iflavor_sv;
+#else
+      iflavor = reinterpret_cast<unsigned int*>(iflavor_sv)[0];
+#endif
 
       // *** DIAGRAM 1 OF 2 ***
 
