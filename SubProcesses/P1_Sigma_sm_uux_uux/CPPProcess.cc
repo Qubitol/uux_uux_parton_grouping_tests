@@ -391,7 +391,7 @@ namespace mg5amcCpu
       // for GPU it is an int
       // for SIMD it is also an int, since it is constant across the SIMD vector
       const unsigned int iflavor = 0;
-      const uint_sv iflavor_sv = FL_ACCESS::kernelAccessConst( iflavorVec );
+      const uint_sv iflavor_sv = F_ACCESS::kernelAccessConst( iflavorVec );
 #ifdef MGONGPUCPP_GPUIMPL
       iflavor = iflavor_sv;
 #else
