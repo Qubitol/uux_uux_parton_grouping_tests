@@ -390,11 +390,11 @@ namespace mg5amcCpu
       // Scalar iflavor for the current event
       // for GPU it is an int
       // for SIMD it is also an int, since it is constant across the SIMD vector
-      const uint_sv iflavor_sv = F_ACCESS::kernelAccessConst( iflavorVec );
+      const uint_sv& iflavor_sv = F_ACCESS::kernelAccessConst( iflavorVec );
 #ifdef MGONGPUCPP_GPUIMPL
       const unsigned int iflavor = iflavor_sv;
 #else
-      const unsigned int iflavor = reinterpret_cast<unsigned int*>(iflavor_sv)[0];
+      const unsigned int iflavor = reinterpret_cast<const unsigned int*>(&iflavor_sv)[0];
 #endif
 
       // *** DIAGRAM 1 OF 2 ***
